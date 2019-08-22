@@ -1,0 +1,17 @@
+parameters:
+ template: centos-7
+ name: gcpupload
+ net: default
+ bucket: kubevirt-button
+ url: https://storage.googleapis.com/rhcos/rhcos/42.80.20190809.0.tar.gz
+
+gcpupload:
+ template: {{ template }}
+ nets:
+ - {{ net }}
+ disks:
+ - 10
+ cmds:
+ - curl {{ url }} > {{ url | basename }}
+ - gsutil cp {{ url | basename }} gs://{{ bucket }}
+ - poweroff
