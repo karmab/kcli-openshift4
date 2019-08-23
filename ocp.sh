@@ -18,7 +18,7 @@ if [ "$BIN" != "0" ] && [ "$ALIAS" != "0" ]; then
   VOLUMES=""
   [ -d /var/lib/libvirt/images ] && [ -d /var/run/libvirt ] && VOLUMES="-v /var/lib/libvirt/images:/var/lib/libvirt/images -v /var/run/libvirt:/var/run/libvirt"
   [ -d $HOME/.kcli ] || mkdir -p $HOME/.kcli
-  alias kcli="$engine run -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $VOLUMES -v $PWD:/workdir karmab/kcli"
+  alias kcli="$engine run --nethost -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $VOLUMES -v $PWD:/workdir -v /tmp:/ignitiondir karmab/kcli"
   echo -e "${BLUE}Using $(alias kcli)${NC}"
 fi
 
