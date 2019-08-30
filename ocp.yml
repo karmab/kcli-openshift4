@@ -2,13 +2,11 @@ parameters:
  numcpus: 4
  network: default
  use_br: false
- extra_disk: false
  master_memory: 8192
  worker_memory: 8192
  deploy_bootstrap: true
  bootstrap_memory: 4096
  disk_size: 30
- extra_disk_size: 30
  template: rhcos-420.8.20190611.0-qemu.qcow2
  cluster: testk
  domain: karmalabs.com
@@ -19,6 +17,7 @@ parameters:
  keys: []
  api_ip: 
  dns_ip: 
+ extra_disks: []
 
 {% if not scale %}
 {{ cluster }}-bootstrap:
@@ -60,11 +59,7 @@ parameters:
  dns: {{ dns_ip }}
  nets:
   - name: {{ network }}
- disks:
-  - size: {{ disk_size }}
-{% if extra_disk %}
-  - size: {{ extra_disk_size }}
-{% endif %}
+ disks: {{ [disk_size] + extra_disks }}
  files:
 {% if use_br %}
   - path: /etc/NetworkManager/dispatcher.d/98-brextscript
@@ -110,11 +105,7 @@ parameters:
  dns: {{ dns_ip }}
  nets:
   - name: {{ network }}
- disks:
-  - size: {{ disk_size }}
-{% if extra_disk %}
-  - size: {{ extra_disk_size }}
-{% endif %}
+ disks: {{ [disk_size] + extra_disks }}
  files:
 {% if use_br %}
   - path: /etc/NetworkManager/dispatcher.d/98-brextscript
