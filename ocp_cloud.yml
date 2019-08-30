@@ -2,12 +2,11 @@ parameters:
  numcpus: 4
  network: default
  use_br: false
- extra_disk: false
+ extra_disks: []
  master_memory: 8192
  worker_memory: 8192
  bootstrap_memory: 4096
  disk_size: 30
- extra_disk_size: 30
  template: rhcos-410.8.20190520.1-openstack.qcow2
  cluster: testk
  domain: karmalabs.com
@@ -125,11 +124,7 @@ apps.{{ cluster }}:
  nets:
  - name: {{ network }}
  reservedns: true
- disks:
- - size: {{ disk_size }}
-{% if extra_disk %}
- - size: {{ extra_disk_size }}
-{% endif %}
+ disks: {{ [disk_size] + extra_disks }}
  files:
 {% if use_br %}
  - path: /etc/NetworkManager/dispatcher.d/98-brextscript
