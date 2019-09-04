@@ -2,6 +2,7 @@
 
 IF=$(ip r | grep default | grep -Po '(?<=dev )(\S+)')
 #if $(grep -q "dracut" /etc/sysconfig/network-scripts/ifcfg-$IF); then
+#if [ "$IF" != "" ]] && [ ! -f /etc/sysconfig/network-scripts/ifcfg-$IF ] ; then
 if [ ! -f /etc/sysconfig/network-scripts/ifcfg-$IF ] ; then
 echo brext acting on $IF
 cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-$IF
