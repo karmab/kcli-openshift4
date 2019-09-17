@@ -1,13 +1,13 @@
 apiVersion: v1
-baseDomain: DOMAIN
+baseDomain: ${domain}
 compute:
 - name: worker
-  replicas: WORKERS
+  replicas: ${workers}
 controlPlane:
   name: master
-  replicas: MASTERS
+  replicas: ${masters}
 metadata:
-  name: CLUSTER
+  name: ${cluster}
 networking:
   clusterNetworks:
   - cidr: 10.132.0.0/14
@@ -17,6 +17,6 @@ networking:
   - 172.30.0.0/16
 platform:
   none: {}
-pullSecret: 'PULLSECRET'
+pullSecret: '${pull_secret}'
 sshKey: |
-    PUBKEY
+    ${pub_key}

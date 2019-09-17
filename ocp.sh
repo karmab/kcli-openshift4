@@ -53,7 +53,7 @@ else
   kcliplan="$kcli plan"
 fi
 
-cluster="${cluster:-$envname}"
+export cluster="${cluster:-$envname}"
 helper_template="${helper_template:-CentOS-7-x86_64-GenericCloud.qcow2}"
 helper_sleep="${helper_sleep:-15}"
 default_template=$(grep -m1 template: ocp.yml | awk -F: '{print $2}' | xargs)
@@ -62,13 +62,13 @@ api_ip="${api_ip:-}"
 dns_ip="${dns_ip:-}"
 public_api_ip="${public_api_ip:-}"
 bootstrap_api_ip="${bootstrap_api_ip:-}"
-domain="${domain:-karmalabs.com}"
+export domain="${domain:-karmalabs.com}"
 network="${network:-default}"
-masters="${masters:-1}"
-workers="${workers:-0}"
+export masters="${masters:-1}"
+export workers="${workers:-0}"
 tag="${tag:-cnvlab}"
-pub_key="${pubkey:-$HOME/.ssh/id_rsa.pub}"
-pull_secret="${pull_secret:-openshift_pull.json}"
+export pub_key="${pubkey:-$HOME/.ssh/id_rsa.pub}"
+export pull_secret="${pull_secret:-openshift_pull.json}"
 force="${force:-false}"
 
 clusterdir=clusters/$cluster
@@ -99,12 +99,7 @@ fi
 
 pub_key=`cat $pub_key`
 pull_secret=`cat $pull_secret | tr -d [:space:]`
-sed "s%DOMAIN%$domain%" install-config.yaml > $clusterdir/install-config.yaml
-sed -i "s%WORKERS%$workers%" $clusterdir/install-config.yaml
-sed -i "s%MASTERS%$masters%" $clusterdir/install-config.yaml
-sed -i "s%CLUSTER%$cluster%" $clusterdir/install-config.yaml
-sed -i "s%PULLSECRET%$pull_secret%" $clusterdir/install-config.yaml
-sed -i "s%PUBKEY%$pub_key%" $clusterdir/install-config.yaml
+envsubst < install-config.yaml > $clusterdir/install-config.yaml
 
 openshift-install --dir=$clusterdir create manifests
 cp customisation/* $clusterdir/openshift
@@ -120,7 +115,7 @@ if [ "$platform" == "openstack" ]; then
   fi
 fi
 
-if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]]; then
+if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
   if [ -z "$api_ip" ]; then
     # we deploy a temp vm to grab an ip for the api, if not predefined
     $kcli vm -p $helper_template -P plan=$cluster -P nets=[$network] $cluster-helper
@@ -178,16 +173,18 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]]; then
     sudo sh -c "echo server=/apps.$cluster.$domain/$dns_ip > /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf"
     sudo systemctl reload NetworkManager
   fi
-  if [ "$platform" == "kubevirt" ] || [ "$platform" == "openstack" ]; then
+  if [ "$platform" == "kubevirt" ] || [ "$platform" == "openstack" ] || [ "$platform" == "vsphere" ]; then
     # bootstrap ignition is too big for kubevirt/openstack so we serve it from a dedicated temporary node
     if [ "$platform" == "kubevirt" ]; then
       helper_template="kubevirt/fedora-cloud-container-disk-demo"
       helper_parameters=""
       iptype="ip"
-    else
-      helper_template="CentOS-7-x86_64-GenericCloud.qcow2"
+    elif [ "$platform" == "openstack" ]; then
       helper_parameters="-P flavor=m1.medium"
       iptype="privateip"
+      iptype="ip"
+    else
+      iptype="ip"
     fi
     $kcli vm -p $helper_template -P plan=$cluster -P nets=[$network] $helper_parameters $cluster-bootstrap-helper
     while [ "$bootstrap_api_ip" == "" ] ; do
@@ -196,19 +193,19 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]]; then
       sleep 5
     done
     sleep $helper_sleep
-    $kcli ssh root@$cluster-bootstrap-helper "yum -y install httpd ; systemctl start httpd"
+    $kcli ssh root@$cluster-bootstrap-helper "iptables -F ; yum -y install httpd ; systemctl start httpd"
     $kcli scp $clusterdir/bootstrap.ign root@$cluster-bootstrap-helper:/var/www/html/bootstrap
     sed "s@https://api-int.$cluster.$domain:22623/config/master@http://$bootstrap_api_ip/bootstrap@" $clusterdir/master.ign > $clusterdir/bootstrap.ign
   fi
   sed -i "s@https://api-int.$cluster.$domain:22623/config@http://$api_ip:8080@" $clusterdir/master.ign $clusterdir/worker.ign
 fi
 
-if [[ "$platform" != *virt* ]] && [[ "$platform" != *openstack* ]]; then
+if [[ "$platform" != *virt* ]] && [[ "$platform" != *openstack* ]] && [[ "$platform" != *vsphere* ]]; then
   # bootstrap ignition is too big for cloud platforms to handle so we serve it from a dedicated temporary vm
   $kcli vm -p $helper_template -P reservedns=true -P domain=$cluster.$domain -P tags=[$tag] -P plan=$cluster -P nets=[$network] $cluster-bootstrap-helper
   status=""
   while [ "$status" != "running" ] ; do
-      status=$($kcli info -f status -v $cluster-bootstrap-helper | tr '[:upper:]' '[:lower:]')
+      status=$($kcli info -f status -v $cluster-bootstrap-helper | tr '[:upper:]' '[:lower:]' | sed 's/up/running/')
       echo -e "${BLUE}Waiting 5s for bootstrap helper node to be running...${NC}"
       sleep 5
   done
@@ -217,7 +214,7 @@ if [[ "$platform" != *virt* ]] && [[ "$platform" != *openstack* ]]; then
   sed s@https://api-int.$cluster.$domain:22623/config/master@http://$cluster-bootstrap-helper.$cluster.$domain/bootstrap@ $clusterdir/master.ign > $clusterdir/bootstrap.ign
 fi
 
-if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]]; then
+if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
   $kcliplan -f ocp.yml $cluster
   openshift-install --dir=$clusterdir wait-for bootstrap-complete || exit 1
   todelete="$cluster-bootstrap"
@@ -230,7 +227,7 @@ else
   $kcli delete --yes $cluster-bootstrap $cluster-bootstrap-helper
 fi
 
-if [[ "$platform" == *virt* ]]; then
+if [[ "$platform" == *virt* ]] || [ "$platform" == "vsphere" ]; then
   cp $clusterdir/worker.ign $clusterdir/worker.ign.ori
   curl --silent -kL https://api.$cluster.$domain:22623/config/worker -o $clusterdir/worker.ign
 fi

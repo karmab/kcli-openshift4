@@ -4,7 +4,7 @@ It's of course not supported in anyway by Red Hat.
 
 The initial target is ovirt/rhev and libvirt although the approach aims to be independent of the platform.
 
-This was also tested on kubevirt, openstack, aws and gcp.
+This was also tested on kubevirt, openstack, aws, gcp and vsphere. 
 
 The main features are:
 
@@ -48,7 +48,7 @@ If you want to tweak them, create a parameter file similar to [*parameters.yml.s
 - *pull_secret* location. Defaults to `./openshift_pull.json`
 - *template* rhcos template to use (should be qemu for libvirt/kubevirt and openstack one for ovirt/openstack).
 - *helper_template* which template to use when deploying temporary vms (defaults to `CentOS-7-x86_64-GenericCloud.qcow2`)
-- *helper_sleep*. Defaults to `15`. Number of seconds to wait when deploying the bootstrap helper node on openstack/kubevirt before sshing into it
+- *helper_sleep*. Defaults to `15`. Number of seconds to wait when deploying the bootstrap helper node on openstack/kubevirt/vsphere before sshing into it
 - *masters* number of masters. Defaults to `1`
 - *workers* number of workers. Defaults to `1`
 - *network*. Defaults to `default`
@@ -106,7 +106,7 @@ We deploy :
 - an arbitrary number of masters.
 - an arbitrary number of workers.
 - a bootstrap node removed during the install.
-- on kubevirt, an additional bootstrap helper node removed during the install. It serves ignition data to the bootstrap node, as the field used to store userdata can't handle the many caracters of the bootstrap ignition file.
+- on kubevirt/openstack/vsphere, an additional bootstrap helper node removed during the install. It serves ignition data to the bootstrap node, as the field used to store userdata can't handle the many caracters of the bootstrap ignition file.
 
 We first generate all the ignition files needed for the install.
 
