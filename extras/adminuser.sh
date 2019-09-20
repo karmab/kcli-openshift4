@@ -1,8 +1,10 @@
 #!/bin/bash 
 
-user=admin
-password=admin
-htpasswd=$(printf "$user:$(openssl passwd -apr1 $password)\n")
+user1=admin
+password1=admin
+user2=dev
+password2=dev
+htpasswd=$(printf "$user1:$(openssl passwd -apr1 $password1)\n$user2:$(openssl passwd -apr1 $password2)\n")
 htpasswd=$(echo $htpasswd | base64)
 
 oc apply -f - <<EOF
@@ -33,5 +35,4 @@ spec:
         name: htpass-secret
 EOF
 
-#sleep 20
 oc adm policy add-cluster-role-to-user cluster-admin admin
