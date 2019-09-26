@@ -112,9 +112,14 @@ echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
 [ "$force" == "false" ] && [ -d $clusterdir ] && echo -e "${RED}Please Remove existing $clusterdir first${NC}..." && exit 1
 mkdir -p $clusterdir || true
 
+platform=$($kcli list --clients | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
 if [ "$template" == "" ] ; then
     template=$($kcli list --templates | grep rhcos | head -1 | awk -F'|' '{print $2}')
     if [ "$template" == "" ] ; then
+      if [ "$platform" == "vsphere" ] ; then
+        echo -e "${RED}Undefined template in parameters file...${NC}"
+        exit 1
+      fi
       echo -e "${BLUE}Downloading latest rhcos template...${NC}"
       kcli download rhcoslatest
       template=$($kcli list --templates | grep rhcos | head -1 | awk -F'|' '{print $2}')
@@ -139,8 +144,6 @@ openshift-install --dir=$clusterdir create manifests
 cp customisation/* $clusterdir/openshift
 sed -i "s/3/$masters/" $clusterdir/openshift/99-ingress-controller.yaml
 openshift-install --dir=$clusterdir create ignition-configs
-
-platform=$($kcli list --clients | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
 
 if [ "$platform" == "openstack" ]; then
   if [ -z "$api_ip" ] || [ -z "$public_api_ip" ]; then
