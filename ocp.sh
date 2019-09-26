@@ -6,6 +6,14 @@ BLUE='\033[0;36m'
 NC='\033[0m'
 
 [ -f env.sh ] && shopt -s expand_aliases  && source env.sh
+export PATH=.:$PATH
+if [ -d /Users ] ; then
+    SYSTEM=macosx
+    INSTALLSYSTEM=mac
+else
+    SYSTEM=linux
+    INSTALLSYSTEM=linux
+fi
 
 which kcli >/dev/null 2>&1
 BIN="$?"
@@ -56,8 +64,7 @@ fi
 export cluster="${cluster:-$envname}"
 helper_template="${helper_template:-CentOS-7-x86_64-GenericCloud.qcow2}"
 helper_sleep="${helper_sleep:-15}"
-default_template=$(grep -m1 template: ocp.yml | awk -F: '{print $2}' | xargs)
-template="${template:-$default_template}"
+template="${template:-}"
 api_ip="${api_ip:-}"
 dns_ip="${dns_ip:-}"
 public_api_ip="${public_api_ip:-}"
@@ -71,30 +78,57 @@ export pub_key="${pubkey:-$HOME/.ssh/id_rsa.pub}"
 export pull_secret="${pull_secret:-openshift_pull.json}"
 force="${force:-false}"
 
+if [ ! -f $pull_secret ] ; then
+ echo -e "${RED}Missing pull secret file $pull_secret ${NC}"
+ exit 1
+fi
+
+OC=$(which oc 2>/dev/null)
+if  [ "$OC" == "" ]; then
+ echo -e "${BLUE}Downloading oc in current directory${NC}"
+ curl https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/$SYSTEM/oc.tar.gz > oc.tar.gz
+ tar zxvf oc.tar.gz
+ rm -rf oc.tar.gz
+fi
+
 clusterdir=clusters/$cluster
 export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
 INSTALLER=$(which openshift-install 2>/dev/null)
-if  [ "$INSTALLER" == "" ]; then
- echo -e "${RED}Missing openshift-install binary. Get it at https://mirror.openshift.com/pub/openshift-v4/clients/ocp${NC}"
- exit 1
+if [ "$INSTALLER" == "" ]; then
+  if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then  
+    echo -e "${BLUE}Downloading latest openshift-install from registry.svc.ci.openshift.org in current directory${NC}"
+    TOKEN=$(cat $pull_secret | jq -r '.auths."registry.svc.ci.openshift.org".auth' | base64 -D  | cut -d: -f2)
+    export VERSION=$(curl -s -H  "Authorization: Bearer $TOKEN" https://registry.svc.ci.openshift.org/v2/ocp/release/tags/list | jq -r '.tags | .[]' | sort | grep ci | tail -1)
+    export OPENSHIFT_RELEASE_IMAGE=registry.svc.ci.openshift.org/ocp/release:$VERSION
+    oc adm release extract --registry-config $pull_secret --command=openshift-install --to . $OPENSHIFT_RELEASE_IMAGE
+  else
+    echo -e "${BLUE}Downloading latest openshift-install from https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview in current directory${NC}"
+    VERSION=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt | grep 'Name:' | awk -F: '{print $2}' | xargs)
+    curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-install-$INSTALLSYSTEM-$VERSION.tar.gz | tar zxvf - openshift-install  
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
 echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
-OC=$(which oc 2>/dev/null)
-if  [ "$OC" == "" ]; then
- echo -e "${RED}Missing oc binary. Get it at https://mirror.openshift.com/pub/openshift-v4/clients/oc${NC}"
- exit 1
-fi
 
 [ "$force" == "false" ] && [ -d $clusterdir ] && echo -e "${RED}Please Remove existing $clusterdir first${NC}..." && exit 1
 mkdir -p $clusterdir || true
 
-shorttemplate=$(echo $template | sed 's/-\(openstack\|qemu\).qcow2//')
-echo -e "${BLUE}Using template $template...${NC}"
-$kcli list --templates | grep -q $shorttemplate 
-if [ "$?" != "0" ]; then
- echo -e "${RED}Missing $template. Indicate correct template in your parameters file...${NC}"
- exit 1
+if [ "$template" == "" ] ; then
+    template=$($kcli list --templates | grep rhcos | head -1 | awk -F'|' '{print $2}')
+    if [ "$template" == "" ] ; then
+      echo -e "${BLUE}Downloading latest rhcos template...${NC}"
+      kcli download rhcoslatest
+      template=$($kcli list --templates | grep rhcos | head -1 | awk -F'|' '{print $2}')
+    fi
+    template=$(basename $template)
+    echo -e "${BLUE}Using template $template and adding it to your parameters file...${NC}"
+    echo "template: $template" >> $paramfile
+else
+  echo -e "${BLUE}Checking if template $template is available...${NC}"
+  $kcli list --templates | grep -q $template 
+  if [ "$?" != "0" ]; then
+    echo -e "${RED}Missing $template. Indicate correct template in your parameters file...${NC}"
+    exit 1
+  fi
 fi
 
 pub_key=`cat $pub_key`

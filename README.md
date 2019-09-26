@@ -11,7 +11,7 @@ The main features are:
 - No need to control dns. Those elements are hosted as static pods on the master nodes. (For cloud platforms, we do use cloud public dns)
 - Easily customize the vms.
 - Multiple clusters can live on the same network.
-- Single procedure for libvirt, ovirt, openstack or kubevirt.
+- Single procedure for libvirt, ovirt, vsphere, openstack or kubevirt.
 - No need to compile the installer.
 - No need to tweak libvirtd.
 - Vms can be connected to a real bridge.
@@ -107,6 +107,10 @@ We deploy :
 - an arbitrary number of workers.
 - a bootstrap node removed during the install.
 - on kubevirt/openstack/vsphere, an additional bootstrap helper node removed during the install. It serves ignition data to the bootstrap node, as the field used to store userdata can't handle the many caracters of the bootstrap ignition file.
+
+If oc or openshift-install are missing, they are downloaded on the fly from the registry specified in $registry env variable (registry.svc.ci.openshift.org by default) and filtering to grab latest from ci (a different filter can be specified with the $filter env variable).
+
+If no template is specified in a parameters file, latest rhcos image is downloaded and the corresponding line is added in the parameter file (to ease scaling workers once install is finished).
 
 We first generate all the ignition files needed for the install.
 
