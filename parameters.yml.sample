@@ -12,5 +12,6 @@ extra_disks:
 template: rhcos-410.8.20190520.1-qemu.qcow2
 domain: karmalabs.com
 masters: 1
-workers: 1
+workers: 0
 api_ip: 
+dns_ip: 
