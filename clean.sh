@@ -39,7 +39,7 @@ if [ "$#" == '1' ]; then
     echo -e "${RED}Specified parameter file $paramfile doesn't exist.Leaving...${NC}"
     exit 1
   elif [ "grep cluster: $paramfile" != "" ] ; then
-    export cluster=$(grep cluster $paramfile | awk -F: '{print $2}')
+    export cluster=$(grep cluster $paramfile | awk -F: '{print $2}' | xargs)
   fi
 else
   envname="testk"
@@ -47,4 +47,4 @@ fi
 
 export cluster="${cluster:-$envname}"
 kcli plan -d $cluster --yes 
-rm -rf clusters/$cluster
+rm -rf clusters/${cluster}
