@@ -74,15 +74,17 @@ If you want to tweak them, create a parameter file similar to [*parameters.yml.s
 
 - `./clean.sh` or `clean.sh your_parameter_file` if you have created one.
 
-### Using a custom openshift image
+### Using a custom/latest openshift image
 
-You can put the following lines in your *env.sh*:
+You can use the script *get_latest_installer.sh* or the following lines:
 
 ```
-export PULL_SECRET="xxx"
-export PATH=.:$PATH
+if [ ! -f openshift-install ] ; then
 export OPENSHIFT_RELEASE_IMAGE="registry.svc.ci.openshift.org/ocp/release:4.2"
+export PULL_SECRET="openshift_pull.json"
+TOKEN=$(cat $PULL_SECRET | jq -r '.auths."registry.svc.ci.openshift.org".auth' | base64 -d  | cut -d: -f2)
 oc adm release extract --registry-config $PULL_SECRET --command=openshift-install --to . $OPENSHIFT_RELEASE_IMAGE
+fi
 ```
 
 ### Providing custom machine configs
