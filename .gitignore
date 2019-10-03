@@ -7,5 +7,4 @@ env.sh
 *99-brew.yaml
 oc
 openshift-install
-extras/ocs
 extras/cnv
