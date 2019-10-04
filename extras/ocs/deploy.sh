@@ -59,7 +59,7 @@ envsubst < storagecluster.yml | oc create -f -
 
 while ! oc wait --for condition=ready pod -l app=rook-ceph-mgr -n ${NAMESPACE} --timeout=2400s; do sleep 10 ; done
 
-curl -s https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/toolbox.yaml | sed "s/namespace: rook-ceph/namespace: openshift-storage/" | oc create -f -
+curl -s https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/toolbox.yaml | sed "s/namespace: rook-ceph/namespace: $NAMESPACE/" | oc create -f -
 
 # oc patch storageclass ${cluster}-ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 envsubst < sc.yml | oc create -f -

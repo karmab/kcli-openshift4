@@ -1,6 +1,6 @@
 cluster: testk
 numcpus: 4
-autotart: false
+autostart: false
 network: default
 use_br: false
 master_memory: 16384
@@ -9,7 +9,6 @@ bootstrap_memory: 8192
 disk_size: 30
 extra_disks:
  - 10
-template: rhcos-410.8.20190520.1-qemu.qcow2
 domain: karmalabs.com
 masters: 1
 workers: 0

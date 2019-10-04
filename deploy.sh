@@ -1,41 +1,6 @@
 #!/bin/bash
 
-# set some printing colors
-RED='\033[0;31m'
-BLUE='\033[0;36m'
-NC='\033[0m'
-
-[ -f env.sh ] && shopt -s expand_aliases  && source env.sh
-export PATH=.:$PATH
-if [ -d /Users ] ; then
-    SYSTEM=macosx
-    INSTALLSYSTEM=mac
-else
-    SYSTEM=linux
-    INSTALLSYSTEM=linux
-fi
-
-which kcli >/dev/null 2>&1
-BIN="$?"
-alias kcli >/dev/null 2>&1
-ALIAS="$?"
-
-if [ "$BIN" != "0" ] && [ "$ALIAS" != "0" ]; then
-  engine="docker"
-  which podman >/dev/null 2>&1 && engine="podman"
-  VOLUMES=""
-  [ -d /var/lib/libvirt/images ] && [ -d /var/run/libvirt ] && VOLUMES="-v /var/lib/libvirt/images:/var/lib/libvirt/images -v /var/run/libvirt:/var/run/libvirt"
-  [ -d $HOME/.kcli ] || mkdir -p $HOME/.kcli
-  alias kcli="$engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $VOLUMES -v $PWD:/workdir -v /tmp:/ignitiondir karmab/kcli"
-  echo -e "${BLUE}Using $(alias kcli)${NC}"
-fi
-
-shopt -s expand_aliases
-kcli -v >/dev/null 2>&1
-if [ "$?" != "0" ] ; then
-  echo -e "${RED}kcli not found. Install it from copr karmab/kcli or pull container${NC}"
-  exit 1
-fi
+source common.sh
 
 client=$(kcli list --clients | grep X | awk -F'|' '{print $2}' | xargs)
 echo -e "${BLUE}Deploying on client $client${NC}"
@@ -83,28 +48,22 @@ if [ ! -f $pull_secret ] ; then
  exit 1
 fi
 
-OC=$(which oc 2>/dev/null)
-if  [ "$OC" == "" ]; then
+which -s oc
+if [ "$?" != "0" ]; then
  echo -e "${BLUE}Downloading oc in current directory${NC}"
- curl https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/$SYSTEM/oc.tar.gz > oc.tar.gz
- tar zxvf oc.tar.gz
+ curl --silent https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/$SYSTEM/oc.tar.gz > oc.tar.gz
+ tar zxf oc.tar.gz
  rm -rf oc.tar.gz
 fi
 
 clusterdir=clusters/$cluster
 export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
-INSTALLER=$(which openshift-install 2>/dev/null)
-if [ "$INSTALLER" == "" ]; then
-  if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then  
-    echo -e "${BLUE}Downloading latest openshift-install from registry.svc.ci.openshift.org in current directory${NC}"
-    TOKEN=$(cat $pull_secret | jq -r '.auths."registry.svc.ci.openshift.org".auth' | base64 -d | cut -d: -f2)
-    export VERSION=$(curl -s -H  "Authorization: Bearer $TOKEN" https://registry.svc.ci.openshift.org/v2/ocp/release/tags/list | jq -r '.tags | .[]' | sort | grep ci | tail -1)
-    export OPENSHIFT_RELEASE_IMAGE=registry.svc.ci.openshift.org/ocp/release:$VERSION
-    oc adm release extract --registry-config $pull_secret --command=openshift-install --to . $OPENSHIFT_RELEASE_IMAGE
+which -s openshift-install
+if [ "$?" != "0" ]; then
+  if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
+      get_latest_installer.sh
   else
-    echo -e "${BLUE}Downloading latest openshift-install from https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview in current directory${NC}"
-    VERSION=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt | grep 'Name:' | awk -F: '{print $2}' | xargs)
-    curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-install-$INSTALLSYSTEM-$VERSION.tar.gz | tar zxvf - openshift-install  
+      get_stable_installer.sh
   fi
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)

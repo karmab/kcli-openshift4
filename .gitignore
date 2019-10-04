@@ -8,3 +8,4 @@ env.sh
 oc
 openshift-install
 extras/cnv
+jq
