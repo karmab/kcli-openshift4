@@ -17,7 +17,7 @@ The main features are:
 - Valid pull secret.
 - ssh public key.
 - jq. If not found, the script will download it for you.
-- kcli (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
+- kcli >= 20.0 (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
 - Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
 - Two unused ips in your network to use as *api_ip* and *dns_ip*. Make sure there are excluded from your dhcp server. If not specified, centos temporary vms will be launched to reserve free ips.
 - Target platform needs:

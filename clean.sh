@@ -2,7 +2,7 @@
 
 source common.sh
 
-client=$(kcli list --clients | grep X | awk -F'|' '{print $2}' | xargs)
+client=$(kcli list host | grep X | awk -F'|' '{print $2}' | xargs)
 echo -e "${BLUE}Cleaning on client $client${NC}"
 kcli="kcli -C $client"
 alias kcli >/dev/null 2>&1 && kcli=$(alias kcli | awk -F "'" '{print $2}')" -C $client"
@@ -21,5 +21,5 @@ else
 fi
 
 export cluster="${cluster:-$envname}"
-kcli plan -d $cluster --yes 
+kcli delete plan $cluster --yes
 rm -rf clusters/${cluster}

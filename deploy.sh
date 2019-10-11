@@ -2,7 +2,7 @@
 
 source common.sh
 
-client=$(kcli list --clients | grep X | awk -F'|' '{print $2}' | xargs)
+client=$(kcli list host | grep X | awk -F'|' '{print $2}' | xargs)
 echo -e "${BLUE}Deploying on client $client${NC}"
 kcli="kcli -C $client"
 alias kcli >/dev/null 2>&1 && kcli=$(alias kcli | awk -F "'" '{print $2}')" -C $client"
@@ -20,10 +20,10 @@ if [ "$#" == '1' ]; then
         export $(echo "$line" | cut -d: -f1 | xargs)=$(echo "$line" | cut -d: -f2 | xargs) ;
     done < $paramfile
   fi
-  kcliplan="$kcli plan --paramfile=$paramfile"
+  kcliplan="$kcli create plan --paramfile=$paramfile"
 else
   envname="testk"
-  kcliplan="$kcli plan"
+  kcliplan="$kcli create plan"
 fi
 
 export cluster="${cluster:-$envname}"
@@ -72,24 +72,24 @@ echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
 [ "$force" == "false" ] && [ -d $clusterdir ] && echo -e "${RED}Please Remove existing $clusterdir first${NC}..." && exit 1
 mkdir -p $clusterdir || true
 
-platform=$($kcli list --clients | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
+platform=$($kcli list host | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
 if [ "$template" == "" ] ; then
-    template=$($kcli list --templates | grep rhcos | head -1 | awk -F'|' '{print $2}')
+    template=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
     if [ "$template" == "" ] ; then
       if [ "$platform" == "vsphere" ] ; then
         echo -e "${RED}Undefined template in parameters file...${NC}"
         exit 1
       fi
       echo -e "${BLUE}Downloading latest rhcos template...${NC}"
-      kcli download rhcoslatest
-      template=$($kcli list --templates | grep rhcos | head -1 | awk -F'|' '{print $2}')
+      kcli download image rhcoslatest
+      template=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
     fi
     template=$(basename $template)
     echo -e "${BLUE}Using template $template and adding it to your parameters file...${NC}"
     [ ! -z $paramfile ] && echo "template: $template" >> $paramfile
 else
   echo -e "${BLUE}Checking if template $template is available...${NC}"
-  $kcli list --templates | grep -q $template 
+  $kcli list image | grep -q $template 
   if [ "$?" != "0" ]; then
     echo -e "${RED}Missing $template. Indicate correct template in your parameters file...${NC}"
     exit 1
@@ -115,14 +115,14 @@ fi
 if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
   if [ -z "$api_ip" ]; then
     # we deploy a temp vm to grab an ip for the api, if not predefined
-    $kcli vm -p $helper_template -P plan=$cluster -P nets=[$network] $cluster-helper
+    $kcli create vm -p $helper_template -P plan=$cluster -P nets=[$network] $cluster-helper
     api_ip=""
     while [ "$api_ip" == "" ] ; do
-      api_ip=$($kcli info -f ip -v $cluster-helper)
+      api_ip=$($kcli info vm -f ip -v $cluster-helper)
       echo -e "${BLUE}Waiting 5s to retrieve api ip from helper node...${NC}"
       sleep 5
     done
-    $kcli delete --yes $cluster-helper
+    $kcli delete vm --yes $cluster-helper
     echo -e "${BLUE}Using $api_ip for api vip ...${NC}"
     echo -e "${BLUE}Adding entry for api.$cluster.$domain in your /etc/hosts...${NC}"
     if [[ "$platform" == *openstack* ]]; then
@@ -149,14 +149,14 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
   fi
   if [ -z "$dns_ip" ]; then
     # we deploy a temp vm to grab an ip for the dns, if not predefined
-    $kcli vm -p $helper_template -P plan=$cluster -P nets=[$network] $cluster-dns-helper
+    $kcli create vm -p $helper_template -P plan=$cluster -P nets=[$network] $cluster-dns-helper
     dns_ip=""
     while [ "$dns_ip" == "" ] ; do
-      dns_ip=$($kcli info -f ip -v $cluster-dns-helper)
+      dns_ip=$($kcli info vm -f ip -v $cluster-dns-helper)
       echo -e "${BLUE}Waiting 5s to retrieve dns ip from dns helper node...${NC}"
       sleep 5
     done
-    $kcli delete --yes $cluster-dns-helper
+    $kcli delete vm --yes $cluster-dns-helper
   fi
   echo -e "${BLUE}Using $dns_ip for dns vip ...${NC}"
   if [ -d /Users ] ; then
@@ -183,9 +183,9 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
     else
       iptype="ip"
     fi
-    $kcli vm -p $helper_template -P plan=$cluster -P nets=[$network] $helper_parameters $cluster-bootstrap-helper
+    $kcli create vm -p $helper_template -P plan=$cluster -P nets=[$network] $helper_parameters $cluster-bootstrap-helper
     while [ "$bootstrap_api_ip" == "" ] ; do
-      bootstrap_api_ip=$($kcli info -f $iptype -v $cluster-bootstrap-helper)
+      bootstrap_api_ip=$($kcli info vm -f $iptype -v $cluster-bootstrap-helper)
       echo -e "${BLUE}Waiting 5s for bootstrap helper node to be running...${NC}"
       sleep 5
     done
@@ -199,10 +199,10 @@ fi
 
 if [[ "$platform" != *virt* ]] && [[ "$platform" != *openstack* ]] && [[ "$platform" != *vsphere* ]]; then
   # bootstrap ignition is too big for cloud platforms to handle so we serve it from a dedicated temporary vm
-  $kcli vm -p $helper_template -P reservedns=true -P domain=$cluster.$domain -P tags=[$tag] -P plan=$cluster -P nets=[$network] $cluster-bootstrap-helper
+  $kcli create vm -p $helper_template -P reservedns=true -P domain=$cluster.$domain -P tags=[$tag] -P plan=$cluster -P nets=[$network] $cluster-bootstrap-helper
   status=""
   while [ "$status" != "running" ] ; do
-      status=$($kcli info -f status -v $cluster-bootstrap-helper | tr '[:upper:]' '[:lower:]' | sed 's/up/running/')
+      status=$($kcli info vm -f status -v $cluster-bootstrap-helper | tr '[:upper:]' '[:lower:]' | sed 's/up/running/')
       echo -e "${BLUE}Waiting 5s for bootstrap helper node to be running...${NC}"
       sleep 5
   done
@@ -217,11 +217,11 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
   todelete="$cluster-bootstrap"
   [ "$platform" == "kubevirt" ] && todelete="$todelete $cluster-bootstrap-helper"
   [[ "$platform" != *"virt"* ]] && todelete="$todelete $cluster-bootstrap-helper"
-  $kcli delete --yes $todelete
+  $kcli delete vm --yes $todelete
 else
   $kcliplan -f ocp_cloud.yml -P template=$template $cluster
   openshift-install --dir=$clusterdir wait-for bootstrap-complete || exit 1
-  $kcli delete --yes $cluster-bootstrap $cluster-bootstrap-helper
+  $kcli delete vm --yes $cluster-bootstrap $cluster-bootstrap-helper
 fi
 
 if [[ "$platform" == *virt* ]] || [ "$platform" == "vsphere" ]; then

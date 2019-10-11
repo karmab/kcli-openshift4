@@ -2,7 +2,7 @@
 
 source common.sh
 
-client=$(kcli list --clients | grep X | awk -F'|' '{print $2}' | xargs)
+client=$(kcli list host | grep X | awk -F'|' '{print $2}' | xargs)
 echo -e "${BLUE}Scaling on client $client${NC}"
 kcli="kcli -C $client"
 alias kcli >/dev/null 2>&1 && kcli=$(alias kcli | awk -F "'" '{print $2}')" -C $client"
@@ -20,11 +20,11 @@ elif [ "$#" == '2' ]; then
   elif [ "grep cluster: $paramfile" != "" ] ; then
     export cluster=$(grep cluster $paramfile | awk -F: '{print $2}')
   fi
-  kcliplan="$kcli plan --paramfile=$paramfile"
+  kcliplan="$kcli create plan --paramfile=$paramfile"
 else
   workers="$1"
   envname="testk"
-  kcliplan="$kcli plan"
+  kcliplan="$kcli create plan"
 fi
 
 export cluster="${cluster:-$envname}"
