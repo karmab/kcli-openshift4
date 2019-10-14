@@ -48,7 +48,7 @@ if [ ! -f $pull_secret ] ; then
  exit 1
 fi
 
-which -s oc
+which oc >/dev/null 2>&1
 if [ "$?" != "0" ]; then
  echo -e "${BLUE}Downloading oc in current directory${NC}"
  curl --silent https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/$SYSTEM/oc.tar.gz > oc.tar.gz
@@ -58,7 +58,7 @@ fi
 
 clusterdir=clusters/$cluster
 export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
-which -s openshift-install
+which openshift-install >/dev/null 2>&1
 if [ "$?" != "0" ]; then
   if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
       get_latest_installer.sh

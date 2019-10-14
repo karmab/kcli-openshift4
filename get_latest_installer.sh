@@ -2,7 +2,7 @@
 
 source common.sh
 echo -e "${BLUE}Downloading latest openshift-install from registry.svc.ci.openshift.org in current directory${NC}"
-which -s jq 
+which jq  >/dev/null 2>&1
 if [ "$?" != "0" ] ; then
   echo -e "${BLUE}Downloading jq in current directory${NC}"
   curl --silent https://github.com/stedolan/jq/releases/download/$jq > jq

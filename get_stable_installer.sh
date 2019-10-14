@@ -1,3 +1,4 @@
+#!/bin/bash
 
 source common.sh
 echo -e "${BLUE}Downloading latest openshift-install from https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview in current directory${NC}"

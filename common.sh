@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # set some printing colors
 RED='\033[0;31m'
@@ -17,14 +18,14 @@ else
 fi
 export PATH=.:$PATH
 
-which -s kcli
+which kcli >/dev/null 2>&1
 BIN="$?"
 alias kcli >/dev/null 2>&1
 ALIAS="$?"
 
 if [ "$BIN" != "0" ] && [ "$ALIAS" != "0" ]; then
   engine="docker"
-  which -s podman && engine="podman"
+  which podman >/dev/null 2>&1 && engine="podman"
   VOLUMES=""
   [ -d /var/lib/libvirt/images ] && [ -d /var/run/libvirt ] && VOLUMES="-v /var/lib/libvirt/images:/var/lib/libvirt/images -v /var/run/libvirt:/var/run/libvirt"
   [ -d $HOME/.kcli ] || mkdir -p $HOME/.kcli
