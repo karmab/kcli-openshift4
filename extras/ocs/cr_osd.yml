@@ -9,7 +9,7 @@ spec:
     - matchExpressions:
         - key: kubernetes.io/hostname
           operator: In
-          values: [${masters}]
+          values: [${nodes}]
   storageClassDevices:
     - storageClassName: "osd-sc"
       volumeMode: Block

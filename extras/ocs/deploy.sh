@@ -34,12 +34,12 @@ while ! oc wait --for condition=ready pod -l name=local-storage-operator -n ${NA
 oc adm policy add-cluster-role-to-user cluster-admin -z ocs-operator -n openshift-storage
 oc adm policy add-cluster-role-to-user cluster-admin -z local-storage-operator -n openshift-storage
 
-# Gather list of master nodes
-export masters=$(oc get node -o custom-columns=NAME:.metadata.name --no-headers | tr '\n' ',' | sed 's/.$//')
-master_count=$(echo $(IFS=,; set -f; set -- $masters; echo $#))
+# Gather list of nodes
+export nodes=$(oc get node -o custom-columns=NAME:.metadata.name --no-headers | tr '\n' ',' | sed 's/.$//')
+nodes_count=$(echo $(IFS=,; set -f; set -- $nodes; echo $#))
 # Calculate number of osd to create
 osd_count=$(echo $(IFS=,; set -f; set -- $osd_devices; echo $#))
-export osd_count=$(( $osd_count * $master_count ))
+export osd_count=$(( $osd_count * $nodes_count ))
 
 oc create -f mon_sc.yml
 export counter=0
@@ -50,9 +50,10 @@ for node in $(oc get node -o custom-columns=IP:.status.addresses[0].address --no
 done
 envsubst < cr_osd.yml | oc create -f -
 
-# Mark masters as storage nodes
-for master in $( echo $masters | sed 's/,/ /g') ; do 
-    oc label nodes $master cluster.ocs.openshift.io/openshift-storage=''
+# Mark nodes as storage nodes
+for node in $( echo $nodes | sed 's/,/ /g') ; do 
+    oc adm taint nodes $node node-role.kubernetes.io/master:NoSchedule-
+    oc label nodes $node cluster.ocs.openshift.io/openshift-storage=''
 done
 
 envsubst < storagecluster.yml | oc create -f -
@@ -61,7 +62,6 @@ while ! oc wait --for condition=ready pod -l app=rook-ceph-mgr -n ${NAMESPACE} -
 
 curl -s https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/toolbox.yaml | sed "s/namespace: rook-ceph/namespace: $NAMESPACE/" | oc create -f -
 
-# oc patch storageclass ${cluster}-ceph-rbd -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 envsubst < sc.yml | oc create -f -
 
 # Wait for OSD prepare jobs to be completed
