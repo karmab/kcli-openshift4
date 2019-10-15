@@ -61,7 +61,7 @@ export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
 which openshift-install >/dev/null 2>&1
 if [ "$?" != "0" ]; then
   if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
-      get_latest_installer.sh
+      get_nightly_installer.sh
   else
       get_stable_installer.sh
   fi
