@@ -1,3 +1,9 @@
+.:53 {
+    log
+    errors
+    forward . NAMESERVER
+}
+
 {{ cluster }}.{{ domain }}:53 {
     mdns {{ cluster }}.{{ domain }}  {{ masters }} {{ cluster }}
     hosts {{ cluster }}.{{ domain }} {

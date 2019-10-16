@@ -13,6 +13,28 @@ spec:
   - name: conf-dir
     hostPath:
       path: "/etc/kubernetes"
+  initContainers:
+  - name: update-coredns-conf
+    securityContext:
+      privileged: true
+    image: docker.io/yauritux/busybox-curl
+    command:
+    - "/bin/sh"
+    - "-c"
+    - |
+      #/bin/sh
+      NAMESERVER=$(tail -1 /etc/resolv.conf | sed 's/nameserver//')
+      grep -q "NAMESERVER" /etc/coredns/Corefile
+      if [ "$?" != "0" ] ; then
+        exit 0
+      else
+        sed -i "s@NAMESERVER@$NAMESERVER@" /etc/coredns/Corefile
+      fi
+    resources: {}
+    volumeMounts:
+    - name: conf-dir
+      mountPath: "/etc/coredns"
+    imagePullPolicy: IfNotPresent
   containers:
   - name: coredns
     securityContext:
