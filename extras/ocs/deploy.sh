@@ -52,7 +52,6 @@ envsubst < cr_osd.yml | oc create -f -
 
 # Mark nodes as storage nodes
 for node in $( echo $nodes | sed 's/,/ /g') ; do 
-    oc adm taint nodes $node node-role.kubernetes.io/master:NoSchedule-
     oc label nodes $node cluster.ocs.openshift.io/openshift-storage=''
 done
 

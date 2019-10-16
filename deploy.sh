@@ -229,7 +229,7 @@ if [[ "$platform" == *virt* ]] || [ "$platform" == "vsphere" ]; then
   curl --silent -kL https://api.$cluster.$domain:22623/config/worker -o $clusterdir/worker.ign
 fi
 
-if [[ "$INSTALLER_VERSION" == v4.1* ]] && [ "$workers" -lt "1" ]; then
+if [ "$workers" -gt "0" ]; then
  oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-
 fi
 echo -e "${BLUE}Launching install-complete step. Note it will be retried one extra time in case of timeouts${NC}"
