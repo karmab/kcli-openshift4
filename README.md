@@ -55,7 +55,6 @@ If you want to tweak them, create a parameter file similar to [*parameters.yml.s
 - *disk size* default disk size for final nodes. Defaults to `30Gb`
 - *extra_disk* whether to create a secondary disk (to use with rook, for instance). Defaults to `false`
 - *extra\_disks* array of sizes for additional disk.
-- *use_br* whether to create a bridge on top of the nics of the nodes (useful if planning to deploy kubevirt on top). Defaults to `false`
 - *api_ip* the ip to use for api ip. Defaults to `None`, in which case a temporary vm will be launched to gather a free one.
 - *dns_ip* the ip to use for dns ip. Defaults to `None`, in which case a temporary vm will be launched to gather a free one.
 
