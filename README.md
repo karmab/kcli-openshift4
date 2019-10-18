@@ -19,13 +19,13 @@ The main features are:
 - jq. If not found, the script will download it for you.
 - kcli >= 20.0 (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
 - Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
-- Two unused ips in your network to use as *api_ip* and *dns_ip*. Make sure there are excluded from your dhcp server. If not specified, centos temporary vms will be launched to reserve free ips.
+- An unused ip in your network to use as *api_ip*. Make sure there are excluded from your dhcp server. If not specified, centos temporary vms will be launched to reserve a free ip
 - Target platform needs:
   - rhcos image ( *kcli download rhcoslatest* ). *deploy.sh* will download latest if not present
-  - (optional) centos image ( *kcli download centos7* ). This is only needed when you don't specify an *api_ip* and *dns_ip*
+  - (optional) centos image ( *kcli download centos7* ). This is only needed when you don't specify an *api_ip*
 - For libvirt, support for fw_cfg in qemu (install qemu-kvm-ev on centos for instance).
 - Target platform needs ignition support (for ovirt/rhv, this either requires ovirt >= 4.3.4).
-- On openstack, you will need to create a network with port security disabled (as we need a vip to be reachable on the masters). You will also need to create two ports on this network and map them to floating ips. Put the corresponding api_ip, dns_ip and public_api_ip in your parameter file. You can use [openstack.sh.sample](openstack.sh.sample) as a starting point. You also need to open relevant ports (80, 443, 6443 and 22623) in your security groups.
+- On openstack, you will need to create a network with port security disabled (as we need a vip to be reachable on the masters). You will also need to create two ports on this network and map them to floating ips. Put the corresponding api_ip and public_api_ip in your parameter file. You can use [openstack.sh.sample](openstack.sh.sample) as a starting point. You also need to open relevant ports (80, 443, 6443 and 22623) in your security groups.
 - If defining yourself the vips to use, make sure they are excluded from your dhcp server.
 
 ## How to Use
@@ -56,7 +56,6 @@ If you want to tweak them, create a parameter file similar to [*parameters.yml.s
 - *extra_disk* whether to create a secondary disk (to use with rook, for instance). Defaults to `false`
 - *extra\_disks* array of sizes for additional disk.
 - *api_ip* the ip to use for api ip. Defaults to `None`, in which case a temporary vm will be launched to gather a free one.
-- *dns_ip* the ip to use for dns ip. Defaults to `None`, in which case a temporary vm will be launched to gather a free one.
 
 ### Deploying
 
@@ -110,7 +109,7 @@ If no template is specified in a parameters file, latest rhcos image is download
 
 All the ignition files needed for the install are generated.
 
-Then, if no api ip or dns_ip has been specified, a temporary deployment of vms using a centos7 template is launched to gather available ips.
+Then, if no api ip has been specified, a temporary deployment of vms using a centos7 template is launched to gather available ips.
 
 Final deployment is then launched.
 

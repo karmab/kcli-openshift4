@@ -15,7 +15,6 @@ parameters:
  autostart: false
  keys: []
  api_ip: 
- dns_ip: 
  extra_disks: []
 
 {%- if not scale %}
@@ -55,11 +54,13 @@ parameters:
  numcpus: {{ numcpus }}
  memory: {{ master_memory }}
  autostart: {{ autostart }}
- dns: {{ dns_ip }}
  nets:
   - name: {{ network }}
  disks: {{ [disk_size] + extra_disks }}
  files:
+  - path: /etc/NetworkManager/dispatcher.d/99-forcedns
+    origin: 99-forcedns
+    mode: 755
   - path: /etc/kubernetes/manifests/coredns.yml
     origin: staticpods/coredns.yml
   - path: /etc/kubernetes/Corefile
@@ -93,11 +94,13 @@ parameters:
  numcpus: {{ numcpus }}
  memory: {{ worker_memory }}
  autostart: {{ autostart }}
- dns: {{ dns_ip }}
  nets:
   - name: {{ network }}
  disks: {{ [disk_size] + extra_disks }}
  files:
+  - path: /etc/NetworkManager/dispatcher.d/99-forcedns
+    origin: 99-forcedns
+    mode: 755
   - path: /etc/kubernetes/manifests/coredns.yml
     origin: staticpods/coredns.yml
   - path: /etc/kubernetes/Corefile

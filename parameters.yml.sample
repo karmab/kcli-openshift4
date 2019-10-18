@@ -12,4 +12,3 @@ domain: karmalabs.com
 masters: 1
 workers: 0
 api_ip: 
-dns_ip: 
