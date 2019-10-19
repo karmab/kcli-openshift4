@@ -1,6 +1,13 @@
 #!/bin/bash 
 
 source common.sh
+jq=jq-1.6/jqlinux64
+BASE64D="base64 -d"
+if [ -d /Users ] ; then
+    jq=jq-1.6/jq-osx-amd64
+    BASE64D="base64 -D"
+fi
+
 echo -e "${BLUE}Downloading latest openshift-install from registry.svc.ci.openshift.org in current directory${NC}"
 which jq  >/dev/null 2>&1
 if [ "$?" != "0" ] ; then

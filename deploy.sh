@@ -47,6 +47,10 @@ if [ ! -f $pull_secret ] ; then
  echo -e "${RED}Missing pull secret file $pull_secret ${NC}"
  exit 1
 fi
+if [ ! -f $pub_key ] ; then
+ echo -e "${RED}Missing public key file $pub_key ${NC}"
+ exit 1
+fi
 
 which oc >/dev/null 2>&1
 if [ "$?" != "0" ]; then
@@ -60,11 +64,7 @@ clusterdir=clusters/$cluster
 export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
 which openshift-install >/dev/null 2>&1
 if [ "$?" != "0" ]; then
-  if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
-      get_nightly_installer.sh
-  else
-      get_stable_installer.sh
-  fi
+ get_stable_installer.sh
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
 echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
