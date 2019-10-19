@@ -18,7 +18,7 @@ elif [ "$#" == '2' ]; then
     echo -e "${RED}Specified parameter file $paramfile doesn't exist.Leaving...${NC}"
     exit 1
   elif [ "grep cluster: $paramfile" != "" ] ; then
-    export cluster=$(grep cluster $paramfile | awk -F: '{print $2}')
+    export cluster=$(grep '^cluster:' $paramfile | awk -F: '{print $2}')
   fi
   kcliplan="$kcli create plan --paramfile=$paramfile"
 else
