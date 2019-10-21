@@ -76,13 +76,13 @@ If you want to tweak them, create a parameter file similar to [*parameters.yml.s
 
 ### Using a custom/latest openshift image
 
-You can use the script *get_latest_installer.sh* or the following lines:
+You can use the script *get_ci_installer.sh* or the following lines:
 
 ```
 if [ ! -f openshift-install ] ; then
-export OPENSHIFT_RELEASE_IMAGE="registry.svc.ci.openshift.org/ocp/release:4.2"
 export PULL_SECRET="openshift_pull.json"
-TOKEN=$(cat $PULL_SECRET | jq -r '.auths."registry.svc.ci.openshift.org".auth' | base64 -d  | cut -d: -f2)
+export VERSION=$(curl -s 'https://openshift-release.svc.ci.openshift.org/graph?format=dot' | grep tag | sed 's/.*label="\(.*.\)", shape=.*/\1/' | sort | tail -1)
+export OPENSHIFT_RELEASE_IMAGE=registry.svc.ci.openshift.org/ocp/release:$VERSION
 oc adm release extract --registry-config $PULL_SECRET --command=openshift-install --to . $OPENSHIFT_RELEASE_IMAGE
 fi
 ```
