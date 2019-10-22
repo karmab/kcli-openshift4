@@ -23,7 +23,7 @@ spec:
     - "-c"
     - |
       #/bin/sh
-      NAMESERVER=$(tail -1 /etc/resolv.conf | sed 's/nameserver//')
+      NAMESERVER=$(tail -1 /etc/resolv.conf | sed 's/nameserver //')
       grep -q "NAMESERVER" /etc/coredns/Corefile
       if [ "$?" != "0" ] ; then
         exit 0
@@ -39,7 +39,7 @@ spec:
   - name: coredns
     securityContext:
       privileged: true
-    image: quay.io/openshift-metal3/coredns-mdns:latest
+    image: quay.io/openshift/origin-coredns:latest
     args:
     - "--conf"
     - "/etc/coredns/Corefile"
@@ -50,6 +50,25 @@ spec:
     volumeMounts:
     - name: conf-dir
       mountPath: "/etc/coredns"
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 18080
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      successThreshold: 1
+      failureThreshold: 3
+      timeoutSeconds: 10
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 18080
+        scheme: HTTP
+      initialDelaySeconds: 60
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 5
     terminationMessagePolicy: FallbackToLogsOnError
     imagePullPolicy: IfNotPresent
   hostNetwork: true
