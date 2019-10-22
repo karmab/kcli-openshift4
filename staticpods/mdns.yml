@@ -23,10 +23,18 @@ spec:
     - "-c"
     - |
       #/bin/sh
-      [ -f /etc/mdns/config.hcl ] && exit 0
-      ROUTE=$(ip r | grep default | sed 's/.* via \(.*\) dev.*/\1/')
-      IP=$(ip r get $ROUTE | sed 's/.* src \(.*\) .*/\1/')
+      IF=$(ip r | grep default | head -1 | awk '{print $5}')
+      IP=$(ip -4 addr show dev $IF | grep inet | tr -s " " | cut -d" " -f3 | head -n 1 |  cut -d"/" -f1)
       [ -z "$IP" ] && exit 1
+      if [ -f /etc/mdns/config.hcl ] ; then
+       grep -q $IP /etc/mdns/config.hcl
+       if [ "$?" == "0" ] ; then
+        exit 0 
+       else
+        rm -f /etc/mdns/config.hcl
+        exit 1
+       fi
+      fi
       HOSTNAME=$(hostname -s)
       ETCD=$(echo "$HOSTNAME" | sed 's@{{ cluster }}-master@etcd@')
       sed "s/IP/$IP/" /etc/mdns/config.hcl.templ > /etc/mdns/config.hcl

@@ -8,13 +8,9 @@ NC='\033[0m'
 if [ -d /Users ] ; then
     SYSTEM=macosx
     INSTALLSYSTEM=mac
-    jq=jq-1.6/jq-osx-amd64
-    BASE64D="base64 -D"
 else
     SYSTEM=linux
     INSTALLSYSTEM=linux
-    jq=jq-1.6/jqlinux64
-    BASE64D="base64 -d"
 fi
 export PATH=.:$PATH
 
@@ -29,7 +25,7 @@ if [ "$BIN" != "0" ] && [ "$ALIAS" != "0" ]; then
   VOLUMES=""
   [ -d /var/lib/libvirt/images ] && [ -d /var/run/libvirt ] && VOLUMES="-v /var/lib/libvirt/images:/var/lib/libvirt/images -v /var/run/libvirt:/var/run/libvirt"
   [ -d $HOME/.kcli ] || mkdir -p $HOME/.kcli
-  alias kcli="$engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $VOLUMES -v $PWD:/workdir -v /var/tmp:/ignitiondir karmab/kcli"
+  alias kcli="$engine run --net host -it --rm --security-opt label=disable -v $HOME/.ssh:/root/.ssh -v $HOME/.kcli:/root/.kcli $VOLUMES -v $PWD:/workdir -v /var/tmp:/ignitiondir karmab/kcli"
   echo -e "${BLUE}Using $(alias kcli)${NC}"
 fi
 
