@@ -1,7 +1,6 @@
 parameters:
  numcpus: 4
  network: default
- use_br: false
  extra_disks: []
  master_memory: 8192
  worker_memory: 8192
@@ -92,13 +91,6 @@ apps.{{ cluster }}:
  disks:
  - size: {{ disk_size }}
  files:
-{% if use_br %}
- - path: /etc/NetworkManager/dispatcher.d/98-brextscript
-   origin: 98-brextscript
-   mode: 755
- - path: /etc/sysconfig/network-scripts/ifcfg-brext
-   origin: ifcfg-brext
-{% endif %}
 {% if type == 'gcp' %}
  - path: /usr/local/bin/gcp-hack.sh
    origin: gcp-hack.sh
@@ -125,13 +117,5 @@ apps.{{ cluster }}:
  - name: {{ network }}
  reservedns: true
  disks: {{ [disk_size] + extra_disks }}
- files:
-{% if use_br %}
- - path: /etc/NetworkManager/dispatcher.d/98-brextscript
-   origin: 98-brextscript
-   mode: 755
- - path: /etc/sysconfig/network-scripts/ifcfg-brext
-   origin: ifcfg-brext
-{% endif %}
  tags: [{{ tag }}]
 {% endfor %}

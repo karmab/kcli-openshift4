@@ -2,7 +2,6 @@ cluster: testk
 numcpus: 4
 autostart: false
 network: default
-use_br: false
 master_memory: 16384
 worker_memory: 8192
 bootstrap_memory: 8192
