@@ -28,4 +28,11 @@ else
 fi
 
 export cluster="${cluster:-$envname}"
-$kcliplan -f ocp.yml -P workers=$workers -P scale=true $cluster
+template=$($kcli info vm $cluster-master-0 -f image -v)
+if [ "$template" == "" ]; then
+  echo -e "${RED}Missing template...${NC}"
+  exit 1
+else
+  echo -e "${BLUE}Using template $template...${NC}"
+fi
+$kcliplan -f ocp.yml -P workers=$workers -P scale=true -P template=$template $cluster

@@ -88,8 +88,7 @@ if [ "$template" == "" ] ; then
       template=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
     fi
     template=$(basename $template)
-    echo -e "${BLUE}Using template $template and adding it to your parameters file...${NC}"
-    [ ! -z $paramfile ] && echo "template: $template" >> $paramfile
+    echo -e "${BLUE}Using template $template...${NC}"
 else
   echo -e "${BLUE}Checking if template $template is available...${NC}"
   $kcli list image | grep -q $template 
