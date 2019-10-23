@@ -1,11 +1,13 @@
-{{ cluster }}.{{ domain }}:53 {
+. {
+    errors
+    health :18080
     mdns {{ cluster }}.{{ domain }}  {{ masters }} {{ cluster }}
+    forward . NAMESERVER
+    cache 30
+    reload
     hosts {{ cluster }}.{{ domain }} {
         {{ api_ip }} api-int.{{ cluster }}.{{ domain }} api.{{ cluster }}.{{ domain }}
         fallthrough
     }
-}
-
-apps.{{ cluster }}.{{ domain }}:53 {
- file /etc/coredns/apps.db
+    file /etc/coredns/apps.db apps.{{ cluster }}.{{ domain }}
 }
