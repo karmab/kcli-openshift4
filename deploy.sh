@@ -31,7 +31,6 @@ helper_template="${helper_template:-CentOS-7-x86_64-GenericCloud.qcow2}"
 helper_sleep="${helper_sleep:-15}"
 template="${template:-}"
 api_ip="${api_ip:-}"
-dns_ip="${dns_ip:-}"
 public_api_ip="${public_api_ip:-}"
 bootstrap_api_ip="${bootstrap_api_ip:-}"
 export domain="${domain:-karmalabs.com}"
@@ -151,27 +150,15 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
     fi
     grep -q "$host_ip api.$cluster.$domain" /etc/hosts || sudo sh -c "echo $host_ip api.$cluster.$domain console-openshift-console.apps.$cluster.$domain oauth-openshift.apps.$cluster.$domain prometheus-k8s-openshift-monitoring.apps.$cluster.$domain >> /etc/hosts"
   fi
-  if [ -z "$dns_ip" ]; then
-    # we deploy a temp vm to grab an ip for the dns, if not predefined
-    $kcli create vm -p $helper_template -P plan=$cluster -P nets=[$network] $cluster-dns-helper
-    dns_ip=""
-    while [ "$dns_ip" == "" ] ; do
-      dns_ip=$($kcli info vm -f ip -v $cluster-dns-helper)
-      echo -e "${BLUE}Waiting 5s to retrieve dns ip from dns helper node...${NC}"
-      sleep 5
-    done
-    $kcli delete vm --yes $cluster-dns-helper
-  fi
-  echo -e "${BLUE}Using $dns_ip for dns vip ...${NC}"
   if [ -d /Users ] ; then
     [ -d /etc/resolver ] || sudo mkdir /etc/resolver 
-    if [ ! -f /etc/resolver/$cluster.$domain ] || [ "$(grep $dns_ip /etc/resolver/$cluster.$domain)" == "" ] ; then
+    if [ ! -f /etc/resolver/$cluster.$domain ] || [ "$(grep $api_ip /etc/resolver/$cluster.$domain)" == "" ] ; then
       echo -e "${BLUE}Adding wildcard for apps.$cluster.$domain in /etc/resolver...${NC}"
-      sudo sh -c "echo nameserver $dns_ip > /etc/resolver/$cluster.$domain"
+      sudo sh -c "echo nameserver $api_ip > /etc/resolver/$cluster.$domain"
     fi
-  elif [ ! -f /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf ] || [ "$(grep $dns_ip /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf)" == "" ] ; then
+  elif [ ! -f /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf ] || [ "$(grep $api_ip /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf)" == "" ] ; then
     echo -e "${BLUE}Adding wildcard for apps.$cluster.$domain in NetworkManager...${NC}"
-    sudo sh -c "echo server=/apps.$cluster.$domain/$dns_ip > /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf"
+    sudo sh -c "echo server=/apps.$cluster.$domain/$api_ip > /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf"
     sudo systemctl reload NetworkManager
   fi
   if [ "$platform" == "kubevirt" ] || [ "$platform" == "openstack" ] || [ "$platform" == "vsphere" ]; then
@@ -234,7 +221,7 @@ if [[ "$platform" == *virt* ]] || [ "$platform" == "vsphere" ]; then
 fi
 
 if [ "$workers" -gt "0" ]; then
- oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-
+  oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-
 fi
 echo -e "${BLUE}Launching install-complete step. Note it will be retried one extra time in case of timeouts${NC}"
 openshift-install --dir=$clusterdir wait-for install-complete || openshift-install --dir=$clusterdir wait-for install-complete
