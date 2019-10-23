@@ -47,6 +47,10 @@ if [ ! -f $pull_secret ] ; then
  echo -e "${RED}Missing pull secret file $pull_secret ${NC}"
  exit 1
 fi
+if [ ! -f $pub_key ] ; then
+ echo -e "${RED}Missing public key file $pub_key ${NC}"
+ exit 1
+fi
 
 which oc >/dev/null 2>&1
 if [ "$?" != "0" ]; then
@@ -142,8 +146,8 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
     echo -e "${BLUE}Using $host_ip for api vip ...${NC}"
     duplicates=$(grep -c "^[^#].*api.$cluster.$domain" /etc/hosts)
     if [ "$duplicates" -gt "1" ] ; then
-      echo -e "${RED}Duplicate entries for api.$cluster.$domain found in /etc/hosts${NC}"
-      exit 1
+      echo -e "${BLUE}Cleaning duplicate entries for api.$cluster.$domain in /etc/hosts${NC}"
+      sudo sed -i "/api.$cluster.$domain/d" /etc/hosts
     fi
     grep -q "$host_ip api.$cluster.$domain" /etc/hosts || sudo sh -c "echo $host_ip api.$cluster.$domain console-openshift-console.apps.$cluster.$domain oauth-openshift.apps.$cluster.$domain prometheus-k8s-openshift-monitoring.apps.$cluster.$domain >> /etc/hosts"
   fi
