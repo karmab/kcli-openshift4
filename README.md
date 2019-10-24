@@ -1,38 +1,37 @@
-This repo provides a way for deploying ocp4 using an intermediate approach to upi/ipi, and by heavily leveraging kcli.
+*DISCLAIMER*: This is not supported in anyway by Red Hat.
 
-It's of course not supported in anyway by Red Hat.
+This repo provides a way for deploying openshift4 on any plataform and on an arbitrary number of masters and workers.
+
+Openshift installer is used along with kcli for creation and customization of the vms.
 
 The main features are:
 
 - Single procedure regardless of the virtualization platform (tested on libvirt, ovirt, vsphere, kubevirt, openstack,aws and gcp)
-- No need to control dns. Those elements are hosted as static pods on the master nodes. (For cloud platforms, we do use cloud public dns)
+- Self contained dns. (For cloud platforms, we do use cloud public dns)
 - Easy customisation the vms.
 - Multiple clusters can live on the same l2 network.
 - No need to compile installer.
 - No need to tweak libvirtd.
 - Vms can be connected to a physical bridge.
+- Ability to scale workers.
 
 ## Requirements
 
 - Valid pull secret.
 - ssh public key.
-- jq. If not found, the script will download it for you.
 - kcli >= 20.0 (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
 - Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
-- An unused ip in your network to use as *api_ip*. Make sure there are excluded from your dhcp server. If not specified, centos temporary vms will be launched to reserve a free ip
+- An unused ip in your network to use as *api_ip*. Make sure it is excluded from your dhcp server. If not specified, a temporary centos vm will be launched to reserve a free ip.
 - Target platform needs:
-  - rhcos image ( *kcli download rhcoslatest* ). *deploy.sh* will download latest if not present
+  - rhcos image ( *kcli download rhcoslatest* ). *deploy.sh* will download latest if not present.
   - (optional) centos image ( *kcli download centos7* ). This is only needed when you don't specify an *api_ip*
-- For libvirt, support for fw_cfg in qemu (install qemu-kvm-ev on centos for instance).
-- Target platform needs ignition support (for ovirt/rhv, this either requires ovirt >= 4.3.4).
-- On openstack, you will need to create a network with port security disabled (as we need a vip to be reachable on the masters). You will also need to create two ports on this network and map them to floating ips. Put the corresponding api_ip and public_api_ip in your parameter file. You can use [openstack.sh.sample](openstack.sh.sample) as a starting point. You also need to open relevant ports (80, 443, 6443 and 22623) in your security groups.
-- If defining yourself the vips to use, make sure they are excluded from your dhcp server.
+- For Libvirt, support for fw_cfg in qemu (install qemu-kvm-ev on centos for instance).
+- Target platform needs ignition support (for Ovirt/Rhv, this means >= 4.3.4).
+- On Openstack, you will need to create a network with port security disabled (as we need a vip to be reachable on the masters). You will also need to create two ports on this network and map them to floating ips. Put the corresponding api_ip and public_api_ip in your parameter file. You can use [openstack.sh.sample](openstack.sh.sample) as a starting point. You also need to open relevant ports (80, 443, 6443 and 22623) in your security groups.
 
 ## How to Use
 
 ### Setting your environment
-
-if you create a file called *env.sh*, it will be sourced during deployment. You can put a specific kcli alias there if you're using the container version, or otherwise let the deployment script figure out which alias to use.
 
 Default values can be checked in the parameters section of the file `ocp.yml` or by running `kcli plan -i ocp.yml`
 
