@@ -44,7 +44,7 @@ spec:
   - name: keepalived
     securityContext:
       privileged: true
-    image: quay.io/celebdor/keepalived:latest
+    image: quay.io/openshift/origin-keepalived-ipfailover:latest
     command:
     - /usr/sbin/keepalived
     args:
