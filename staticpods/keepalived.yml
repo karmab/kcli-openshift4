@@ -23,9 +23,6 @@ spec:
     - "-c"
     - |
       #/bin/sh
-      #IF=$(ip r | awk '/^default/ {print $5}')
-      #NETMASK=$(ip -o -f inet addr show $IF | awk '{print $4}'| tail -1 | cut -d/ -f2)
-      #grep "interface $IF" /etc/keepalived/keepalived.conf
       grep "{{ api_ip }}/" /etc/keepalived/keepalived.conf
       if [ "$?" == "0" ] ; then
         exit 0
