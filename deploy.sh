@@ -105,7 +105,12 @@ envsubst < install-config.yaml > $clusterdir/install-config.yaml
 
 openshift-install --dir=$clusterdir create manifests
 cp customisation/* $clusterdir/openshift
-sed -i "s/3/$masters/" $clusterdir/openshift/99-ingress-controller.yaml
+if [ "$workers" -gt "0" ]; then
+  sed -i "s/1/$workers/" $clusterdir/openshift/99-ingress-controller.yaml
+  sed -i "s/master/worker/" $clusterdir/openshift/99-ingress-controller.yaml
+else
+  sed -i "s/1/$masters/" $clusterdir/openshift/99-ingress-controller.yaml
+fi
 openshift-install --dir=$clusterdir create ignition-configs
 
 if [ "$platform" == "openstack" ]; then
