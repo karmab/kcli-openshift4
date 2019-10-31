@@ -27,9 +27,9 @@ else
 fi
 
 export cluster="${cluster:-$envname}"
-helper_template="${helper_template:-CentOS-7-x86_64-GenericCloud.qcow2}"
+helper_image="${helper_image:-CentOS-7-x86_64-GenericCloud.qcow2}"
 helper_sleep="${helper_sleep:-15}"
-template="${template:-}"
+image="${image:-}"
 api_ip="${api_ip:-}"
 public_api_ip="${public_api_ip:-}"
 bootstrap_api_ip="${bootstrap_api_ip:-}"
@@ -70,30 +70,31 @@ if [ "$?" != "0" ]; then
   fi
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
+RHCOS_VERSION=$(echo $INSTALLER_VERSION |  sed "s/v\([0-9]*\).\([0-9]*\).*/\1\2/")
 echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
 
 [ "$force" == "false" ] && [ -d $clusterdir ] && echo -e "${RED}Please Remove existing $clusterdir first${NC}..." && exit 1
 mkdir -p $clusterdir || true
 
 platform=$($kcli list host | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
-if [ "$template" == "" ] ; then
-    template=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
-    if [ "$template" == "" ] ; then
+if [ "$image" == "" ] ; then
+    image=$($kcli list image | grep rhcos | grep $RHCOSVERSION | head -1 | awk -F'|' '{print $2}')
+    if [ "$image" == "" ] ; then
       if [ "$platform" == "vsphere" ] ; then
-        echo -e "${RED}Undefined template in parameters file...${NC}"
+        echo -e "${RED}Undefined image in parameters file...${NC}"
         exit 1
       fi
-      echo -e "${BLUE}Downloading latest rhcos template...${NC}"
-      kcli download image rhcoslatest
-      template=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
+      echo -e "${BLUE}Downloading rhcos image...${NC}"
+      kcli download image rhcos$RHCOSVERSION
+      image=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
     fi
-    template=$(basename $template)
-    echo -e "${BLUE}Using template $template...${NC}"
+    image=$(basename $image)
+    echo -e "${BLUE}Using image $image...${NC}"
 else
-  echo -e "${BLUE}Checking if template $template is available...${NC}"
-  $kcli list image | grep -q $template 
+  echo -e "${BLUE}Checking if image $image is available...${NC}"
+  $kcli list image | grep -q $image 
   if [ "$?" != "0" ]; then
-    echo -e "${RED}Missing $template. Indicate correct template in your parameters file...${NC}"
+    echo -e "${RED}Missing $image. Indicate correct image in your parameters file...${NC}"
     exit 1
   fi
 fi
@@ -117,7 +118,7 @@ fi
 if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
   if [ -z "$api_ip" ]; then
     # we deploy a temp vm to grab an ip for the api, if not predefined
-    $kcli create vm -p $helper_template -P plan=$cluster -P nets=[$network] $cluster-helper
+    $kcli create vm -p $helper_image -P plan=$cluster -P nets=[$network] $cluster-helper
     api_ip=""
     while [ "$api_ip" == "" ] ; do
       api_ip=$($kcli info vm -f ip -v $cluster-helper)
@@ -163,7 +164,7 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
   if [ "$platform" == "kubevirt" ] || [ "$platform" == "openstack" ] || [ "$platform" == "vsphere" ]; then
     # bootstrap ignition is too big for kubevirt/openstack so we serve it from a dedicated temporary node
     if [ "$platform" == "kubevirt" ]; then
-      helper_template="kubevirt/fedora-cloud-container-disk-demo"
+      helper_image="kubevirt/fedora-cloud-container-disk-demo"
       helper_parameters=""
       iptype="ip"
     elif [ "$platform" == "openstack" ]; then
@@ -173,7 +174,7 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
     else
       iptype="ip"
     fi
-    $kcli create vm -p $helper_template -P plan=$cluster -P nets=[$network] $helper_parameters $cluster-bootstrap-helper
+    $kcli create vm -p $helper_image -P plan=$cluster -P nets=[$network] $helper_parameters $cluster-bootstrap-helper
     while [ "$bootstrap_api_ip" == "" ] ; do
       bootstrap_api_ip=$($kcli info vm -f $iptype -v $cluster-bootstrap-helper)
       echo -e "${BLUE}Waiting 5s for bootstrap helper node to be running...${NC}"
@@ -189,7 +190,7 @@ fi
 
 if [[ "$platform" != *virt* ]] && [[ "$platform" != *openstack* ]] && [[ "$platform" != *vsphere* ]]; then
   # bootstrap ignition is too big for cloud platforms to handle so we serve it from a dedicated temporary vm
-  $kcli create vm -p $helper_template -P reservedns=true -P domain=$cluster.$domain -P tags=[$tag] -P plan=$cluster -P nets=[$network] $cluster-bootstrap-helper
+  $kcli create vm -p $helper_image -P reservedns=true -P domain=$cluster.$domain -P tags=[$tag] -P plan=$cluster -P nets=[$network] $cluster-bootstrap-helper
   status=""
   while [ "$status" != "running" ] ; do
       status=$($kcli info vm -f status -v $cluster-bootstrap-helper | tr '[:upper:]' '[:lower:]' | sed 's/up/running/')
@@ -202,14 +203,14 @@ if [[ "$platform" != *virt* ]] && [[ "$platform" != *openstack* ]] && [[ "$platf
 fi
 
 if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
-  $kcliplan -f ocp.yml -P template=$template $cluster
+  $kcliplan -f ocp.yml -P image=$image $cluster
   openshift-install --dir=$clusterdir wait-for bootstrap-complete || exit 1
   todelete="$cluster-bootstrap"
   [ "$platform" == "kubevirt" ] && todelete="$todelete $cluster-bootstrap-helper"
   [[ "$platform" != *"virt"* ]] && todelete="$todelete $cluster-bootstrap-helper"
   $kcli delete vm --yes $todelete
 else
-  $kcliplan -f ocp_cloud.yml -P template=$template $cluster
+  $kcliplan -f ocp_cloud.yml -P image=$image $cluster
   openshift-install --dir=$clusterdir wait-for bootstrap-complete || exit 1
   $kcli delete vm --yes $cluster-bootstrap $cluster-bootstrap-helper
 fi

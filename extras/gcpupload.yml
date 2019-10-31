@@ -1,12 +1,12 @@
 parameters:
- template: centos-7
+ image: centos-7
  name: gcpupload
  net: default
  bucket: kubevirt-button
  url: https://storage.googleapis.com/rhcos/rhcos/42.80.20190809.0.tar.gz
 
 gcpupload:
- template: {{ template }}
+ image: {{ image }}
  nets:
  - {{ net }}
  disks:

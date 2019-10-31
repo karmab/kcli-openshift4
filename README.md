@@ -19,7 +19,7 @@ The main features are:
 
 - Valid pull secret.
 - ssh public key.
-- kcli >= 20.0 (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
+- latest kcli (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
 - Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
 - An unused ip in your network to use as *api_ip*. Make sure it is excluded from your dhcp server. If not specified, a temporary centos vm will be launched to reserve a free ip.
 - Target platform needs:
@@ -41,8 +41,8 @@ If you want to tweak them, create a parameter file similar to [*parameters.yml.s
 - *domain* name. For cloud platforms, it should point to a domain name you have access toº. `Defaults to karmalabs.com`
 - *pub_key* location. Defaults to `$HOME/.ssh/id_rsa.pub`
 - *pull_secret* location. Defaults to `./openshift_pull.json`
-- *template* rhcos template to use (should be qemu for libvirt/kubevirt and openstack one for ovirt/openstack).
-- *helper_template* which template to use when deploying temporary vms (defaults to `CentOS-7-x86_64-GenericCloud.qcow2`)
+- *image* rhcos image to use (should be qemu for libvirt/kubevirt and openstack one for ovirt/openstack).
+- *helper_image* which image to use when deploying temporary vms (defaults to `CentOS-7-x86_64-GenericCloud.qcow2`)
 - *helper_sleep*. Defaults to `15`. Number of seconds to wait when deploying the bootstrap helper node on openstack/kubevirt/vsphere before sshing into it
 - *masters* number of masters. Defaults to `1`
 - *workers* number of workers. Defaults to `0`
@@ -104,11 +104,11 @@ We deploy :
 
 If oc or openshift-install are missing, there latest versions are downloaded on the fly, either from registry.svc.ci.openshift.org if the provided pull secret has an auth for this registry or using public mirrors otherwise.
 
-If no template is specified in a parameters file, latest rhcos image is downloaded and the corresponding line is added in the parameter file (to allow for scaling workers once install is finished).
+If no image is specified in a parameters file, latest rhcos image is downloaded and the corresponding line is added in the parameter file (to allow for scaling workers once install is finished).
 
 All the ignition files needed for the install are generated.
 
-Then, if no api ip has been specified, a temporary deployment of vms using a centos7 template is launched to gather available ips.
+Then, if no api ip has been specified, a temporary deployment of vms using a centos7 image is launched to gather available ips.
 
 Final deployment is then launched.
 

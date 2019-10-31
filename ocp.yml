@@ -6,7 +6,7 @@ parameters:
  deploy_bootstrap: true
  bootstrap_memory: 4096
  disk_size: 30
- template: rhcos-420.8.20190611.0-qemu.qcow2
+ image: rhcos-420.8.20190611.0-qemu.qcow2
  cluster: testk
  domain: karmalabs.com
  masters: 1
@@ -19,7 +19,7 @@ parameters:
 
 {%- if not scale %}
 {{ cluster }}-bootstrap:
- template: {{ template }}
+ image: {{ image }}
  keys: {{ keys }}
  numcpus: 2
  memory: {{ bootstrap_memory }}
@@ -49,7 +49,7 @@ parameters:
 {% for num in range(0, masters) %}
 {{ cluster }}-master-{{ num }}:
  domain: {{ cluster }}.{{ domain }} 
- template: {{ template }}
+ image: {{ image }}
  keys: {{ keys }}
  numcpus: {{ numcpus }}
  memory: {{ master_memory }}
@@ -89,7 +89,7 @@ parameters:
 {% for num in range(0, workers) %}
 {{ cluster }}-worker-{{ num }}:
  domain: {{ cluster }}.{{ domain }} 
- template: {{ template }}
+ image: {{ image }}
  keys: {{ keys }}
  numcpus: {{ numcpus }}
  memory: {{ worker_memory }}
