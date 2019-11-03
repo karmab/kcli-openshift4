@@ -22,4 +22,5 @@ fi
 
 export cluster="${cluster:-$envname}"
 kcli delete plan $cluster --yes
+echo -e "${GREEN}Deleting clusters/${cluster}${NC}"
 rm -rf clusters/${cluster}

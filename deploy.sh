@@ -51,30 +51,9 @@ if [ ! -f $pub_key ] ; then
  exit 1
 fi
 
-which oc >/dev/null 2>&1
-if [ "$?" != "0" ]; then
- echo -e "${BLUE}Downloading oc in current directory${NC}"
- curl --silent https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/$SYSTEM/oc.tar.gz > oc.tar.gz
- tar zxf oc.tar.gz
- rm -rf oc.tar.gz
-fi
-
 clusterdir=clusters/$cluster
-export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
-which openshift-install >/dev/null 2>&1
-if [ "$?" != "0" ]; then
-  if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
-      get_nightly_installer.sh
-  else
-      get_stable_installer.sh
-  fi
-fi
-INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
-RHCOS_VERSION=$(echo $INSTALLER_VERSION |  sed "s/v\([0-9]*\).\([0-9]*\).*/\1\2/")
-echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
-
 [ "$force" == "false" ] && [ -d $clusterdir ] && echo -e "${RED}Please Remove existing $clusterdir first${NC}..." && exit 1
-mkdir -p $clusterdir || true
+export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
 
 platform=$($kcli list host | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
 if [ "$image" == "" ] ; then
@@ -99,6 +78,27 @@ else
   fi
 fi
 
+which oc >/dev/null 2>&1
+if [ "$?" != "0" ]; then
+ echo -e "${BLUE}Downloading oc in current directory${NC}"
+ curl --silent https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/$SYSTEM/oc.tar.gz > oc.tar.gz
+ tar zxf oc.tar.gz
+ rm -rf oc.tar.gz
+fi
+
+which openshift-install >/dev/null 2>&1
+if [ "$?" != "0" ]; then
+  if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
+      get_nightly_installer.sh
+  else
+      get_stable_installer.sh
+  fi
+fi
+INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
+RHCOS_VERSION=$(echo $INSTALLER_VERSION |  sed "s/v\([0-9]*\).\([0-9]*\).*/\1\2/")
+echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
+
+mkdir -p $clusterdir || true
 pub_key=`cat $pub_key`
 pull_secret=`cat $pull_secret | tr -d [:space:]`
 envsubst < install-config.yaml > $clusterdir/install-config.yaml
@@ -122,25 +122,8 @@ fi
 
 if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
   if [ -z "$api_ip" ]; then
-    # we deploy a temp vm to grab an ip for the api, if not predefined
-    $kcli create vm -p $helper_image -P plan=$cluster -P nets=[$network] $cluster-helper
-    api_ip=""
-    while [ "$api_ip" == "" ] ; do
-      api_ip=$($kcli info vm -f ip -v $cluster-helper)
-      echo -e "${BLUE}Waiting 5s to retrieve api ip from helper node...${NC}"
-      sleep 5
-    done
-    $kcli delete vm --yes $cluster-helper
-    echo -e "${BLUE}Using $api_ip for api vip ...${NC}"
-    echo -e "${BLUE}Adding entry for api.$cluster.$domain in your /etc/hosts...${NC}"
-    if [[ "$platform" == *openstack* ]]; then
-        host_ip=$public_api_ip
-    else
-        host_ip=$api_ip
-    fi
-    sudo sed -i "/api.$cluster.$domain/d" /etc/hosts
-    sudo sh -c "echo $host_ip api.$cluster.$domain console-openshift-console.apps.$cluster.$domain oauth-openshift.apps.$cluster.$domain prometheus-k8s-openshift-monitoring.apps.$cluster.$domain >> /etc/hosts"
-    echo "api_ip: $api_ip" >> $paramfile
+    echo -e "${RED}You need to define both api_ip in your parameter file${NC}"
+    exit 1
   else
     if [[ "$platform" == *openstack* ]]; then
         host_ip=$public_api_ip
@@ -167,17 +150,37 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
     sudo systemctl reload NetworkManager
   fi
   if [ "$platform" == "kubevirt" ] || [ "$platform" == "openstack" ] || [ "$platform" == "vsphere" ]; then
-    # bootstrap ignition is too big for kubevirt/openstack so we serve it from a dedicated temporary node
+    # bootstrap ignition is too big for kubevirt/openstack/vsphere so we deploy a temporary web server
     if [ "$platform" == "kubevirt" ]; then
       helper_image="kubevirt/fedora-cloud-container-disk-demo"
       helper_parameters=""
       iptype="ip"
-    elif [ "$platform" == "openstack" ]; then
-      helper_parameters="-P flavor=m1.medium"
-      iptype="privateip"
-      iptype="ip"
     else
-      iptype="ip"
+      if [ "$helper_image" == "" ] ; then
+        helper_image=$($kcli list image | grep -i 'centos\|fedora' | head -1)
+        if [ "$helper_image" != "" ] ; then
+          echo -e "${BLUE}Downloading centos helper image...${NC}"
+          $kcli download centos7
+          helper_image="CentOS-7-x86_64-GenericCloud.qcow2"
+        else
+          helper_image=$(basename "$helper_image")
+        fi
+        echo -e "${BLUE}Using helper image $helper_image${NC}"
+      else
+        echo -e "${BLUE}Checking if image $image is available...${NC}"
+        $kcli list image | grep -q $helper_image 
+        if [ "$?" != "0" ]; then
+          echo -e "${RED}Missing image $helper_image. Indicate correct helper image in your parameters file...${NC}"
+          exit 1
+        fi
+      fi
+      if [ "$platform" == "openstack" ]; then
+        helper_parameters="-P flavor=m1.medium"
+        iptype="privateip"
+        iptype="ip"
+      else
+        iptype="ip"
+      fi
     fi
     $kcli create vm -p $helper_image -P plan=$cluster -P nets=[$network] $helper_parameters $cluster-bootstrap-helper
     while [ "$bootstrap_api_ip" == "" ] ; do
@@ -194,7 +197,7 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
 fi
 
 if [[ "$platform" != *virt* ]] && [[ "$platform" != *openstack* ]] && [[ "$platform" != *vsphere* ]]; then
-  # bootstrap ignition is too big for cloud platforms to handle so we serve it from a dedicated temporary vm
+  # bootstrap ignition is too big for cloud platforms to handle so we deploy a temporary web server
   $kcli create vm -p $helper_image -P reservedns=true -P domain=$cluster.$domain -P tags=[$tag] -P plan=$cluster -P nets=[$network] $cluster-bootstrap-helper
   status=""
   while [ "$status" != "running" ] ; do

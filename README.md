@@ -21,7 +21,7 @@ The main features are:
 - ssh public key.
 - latest kcli (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
 - Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
-- An unused ip in your network to use as *api_ip*. Make sure it is excluded from your dhcp server. If not specified, a temporary centos vm will be launched to reserve a free ip.
+- An unused ip in your network to use as *api_ip*. Make sure it is excluded from your dhcp server.
 - Target platform needs:
   - rhcos image ( *kcli download rhcoslatest* ). *deploy.sh* will download latest if not present.
   - (optional) centos image ( *kcli download centos7* ). This is only needed when you don't specify an *api_ip*
