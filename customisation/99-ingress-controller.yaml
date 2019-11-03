@@ -9,4 +9,5 @@ spec:
     type: HostNetwork
   nodePlacement:
     nodeSelector:
-      node-role.kubernetes.io/master: ''
+      matchLabels:
+        node-role.kubernetes.io/master: ''
