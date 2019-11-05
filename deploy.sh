@@ -55,29 +55,6 @@ clusterdir=clusters/$cluster
 [ "$force" == "false" ] && [ -d $clusterdir ] && echo -e "${RED}Please Remove existing $clusterdir first${NC}..." && exit 1
 export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
 
-platform=$($kcli list host | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
-if [ "$image" == "" ] ; then
-    image=$($kcli list image | grep rhcos | grep $RHCOSVERSION | head -1 | awk -F'|' '{print $2}')
-    if [ "$image" == "" ] ; then
-      if [ "$platform" == "vsphere" ] ; then
-        echo -e "${RED}Undefined image in parameters file...${NC}"
-        exit 1
-      fi
-      echo -e "${BLUE}Downloading rhcos image...${NC}"
-      kcli download image rhcos$RHCOSVERSION
-      image=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
-    fi
-    image=$(basename $image)
-    echo -e "${BLUE}Using image $image...${NC}"
-else
-  echo -e "${BLUE}Checking if image $image is available...${NC}"
-  $kcli list image | grep -q $image 
-  if [ "$?" != "0" ]; then
-    echo -e "${RED}Missing $image. Indicate correct image in your parameters file...${NC}"
-    exit 1
-  fi
-fi
-
 which oc >/dev/null 2>&1
 if [ "$?" != "0" ]; then
  echo -e "${BLUE}Downloading oc in current directory${NC}"
@@ -98,6 +75,29 @@ INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
 RHCOS_VERSION=$(echo $INSTALLER_VERSION |  sed "s/v\([0-9]*\).\([0-9]*\).*/\1\2/")
 echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
 
+platform=$($kcli list host | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
+if [ "$image" == "" ] ; then
+    image=$($kcli list image | grep rhcos | grep $RHCOS_VERSION | head -1 | awk -F'|' '{print $2}')
+    if [ "$image" == "" ] ; then
+      if [ "$platform" == "vsphere" ] ; then
+        echo -e "${RED}Undefined image in parameters file...${NC}"
+        exit 1
+      fi
+      echo -e "${BLUE}Downloading rhcos image...${NC}"
+      kcli download image rhcos$RHCOS_VERSION
+      image=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
+    fi
+    image=$(basename $image)
+    echo -e "${BLUE}Using image $image...${NC}"
+else
+  echo -e "${BLUE}Checking if image $image is available...${NC}"
+  $kcli list image | grep -q $image 
+  if [ "$?" != "0" ]; then
+    echo -e "${RED}Missing $image. Indicate correct image in your parameters file...${NC}"
+    exit 1
+  fi
+fi
+
 mkdir -p $clusterdir || true
 pub_key=`cat $pub_key`
 pull_secret=`cat $pull_secret | tr -d [:space:]`
@@ -106,8 +106,7 @@ envsubst < install-config.yaml > $clusterdir/install-config.yaml
 openshift-install --dir=$clusterdir create manifests
 cp customisation/* $clusterdir/openshift
 if [ "$workers" -gt "0" ]; then
-  sed -i "s/1/$workers/" $clusterdir/openshift/99-ingress-controller.yaml
-  sed -i "s/master/worker/" $clusterdir/openshift/99-ingress-controller.yaml
+  rm -f $clusterdir/openshift/99-ingress-controller.yaml
 else
   sed -i "s/1/$masters/" $clusterdir/openshift/99-ingress-controller.yaml
 fi
