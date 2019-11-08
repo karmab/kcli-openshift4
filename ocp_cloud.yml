@@ -1,6 +1,7 @@
 parameters:
  numcpus: 4
  network: default
+ enableroot: false
  extra_disks: []
  master_memory: 8192
  worker_memory: 8192
@@ -70,6 +71,7 @@ apps.{{ cluster }}:
 {% if not scale %}
 {{ cluster }}-bootstrap:
  image: {{ image }}
+ enableroot: {{ enableroot }}
  numcpus: 2
  memory: {{ bootstrap_memory }}
  nets:
@@ -83,6 +85,7 @@ apps.{{ cluster }}:
 {{ cluster }}-master-{{ num }}:
  domain: {{ cluster }}.{{ domain }} 
  image: {{ image }}
+ enableroot: {{ enableroot }}
  numcpus: {{ numcpus }}
  memory: {{ master_memory }}
  nets:
@@ -111,6 +114,7 @@ apps.{{ cluster }}:
 {{ cluster }}-worker-{{ num }}:
  domain: {{ cluster }}.{{ domain }} 
  image: {{ image }}
+ enableroot: {{ enableroot }}
  numcpus: {{ numcpus }}
  memory: {{ worker_memory }}
  nets:
