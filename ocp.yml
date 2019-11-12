@@ -16,6 +16,9 @@ parameters:
  keys: []
  api_ip: 
  extra_disks: []
+ extra_networks: []
+ master_macs: []
+ worker_macs: []
 
 {%- if not scale %}
 {{ cluster }}-bootstrap:
@@ -47,6 +50,12 @@ parameters:
     origin: staticpods/nginx.yml
 
 {% for num in range(0, masters) %}
+{% if master_macs and master_macs|length >= masters %}
+ {% set net0 = {"name": network, "mac": master_macs[num]} %}
+{% else %}
+ {% set net0 = network %}
+{% endif %}
+
 {{ cluster }}-master-{{ num }}:
  domain: {{ cluster }}.{{ domain }} 
  image: {{ image }}
@@ -54,8 +63,7 @@ parameters:
  numcpus: {{ numcpus }}
  memory: {{ master_memory }}
  autostart: {{ autostart }}
- nets:
-  - name: {{ network }}
+ nets: {{ [net0] + extra_networks }}
  disks: {{ [disk_size] + extra_disks }}
  files:
   - path: /etc/NetworkManager/dispatcher.d/99-forcedns
@@ -87,6 +95,11 @@ parameters:
 {%- endif %}
 
 {% for num in range(0, workers) %}
+{% if worker_macs and worker_macs|length >= workers %}
+ {% set net0 = {"name": network, "mac": worker_macs[num]} %}
+{% else %}
+ {% set net0 = network %}
+{% endif %}
 {{ cluster }}-worker-{{ num }}:
  domain: {{ cluster }}.{{ domain }} 
  image: {{ image }}
@@ -94,8 +107,7 @@ parameters:
  numcpus: {{ numcpus }}
  memory: {{ worker_memory }}
  autostart: {{ autostart }}
- nets:
-  - name: {{ network }}
+ nets: {{ [net0] + extra_networks }}
  disks: {{ [disk_size] + extra_disks }}
  files:
   - path: /etc/NetworkManager/dispatcher.d/99-forcedns
