@@ -40,6 +40,7 @@ export workers="${workers:-0}"
 tag="${tag:-cnvlab}"
 export pub_key="${pubkey:-$HOME/.ssh/id_rsa.pub}"
 export pull_secret="${pull_secret:-openshift_pull.json}"
+export upstream="${upstream:-false}"
 force="${force:-false}"
 
 if [ ! -f $pull_secret ] ; then
@@ -66,26 +67,37 @@ fi
 which openshift-install >/dev/null 2>&1
 if [ "$?" != "0" ]; then
   if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
+    if [ "$upstream" == "true" ] ; then
+      get_upstream_installer.sh
+    else
       get_nightly_installer.sh
+    fi
   else
-      get_stable_installer.sh
+    get_stable_installer.sh
   fi
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
-RHCOS_VERSION=$(echo $INSTALLER_VERSION |  sed "s/v\([0-9]*\).\([0-9]*\).*/\1\2/")
+if [ $upstream == "true" ] ; then
+  COS_VERSION="latest"
+  COS_TYPE="rhcos"
+else
+  COS_VERSION=$(echo $INSTALLER_VERSION |  sed "s/v\([0-9]*\).\([0-9]*\).*/\1\2/")
+  COS_TYPE="fcos"
+fi
+
 echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
 
 platform=$($kcli list host | grep X | awk -F'|' '{print $3}' | xargs | sed 's/kvm/libvirt/')
 if [ "$image" == "" ] ; then
-    image=$($kcli list image | grep rhcos | grep $RHCOS_VERSION | head -1 | awk -F'|' '{print $2}')
+    image=$($kcli list image | grep $COS_TYPE | grep $COS_VERSION | head -1 | awk -F'|' '{print $2}')
     if [ "$image" == "" ] ; then
       if [ "$platform" == "vsphere" ] ; then
         echo -e "${RED}Undefined image in parameters file...${NC}"
         exit 1
       fi
       echo -e "${BLUE}Downloading rhcos image...${NC}"
-      kcli download image rhcos$RHCOS_VERSION
-      image=$($kcli list image | grep rhcos | head -1 | awk -F'|' '{print $2}')
+      kcli download image ${COS_TYPE}${COS_VERSION}
+      image=$($kcli list image | grep $COS_TYPE | head -1 | awk -F'|' '{print $2}')
     fi
     image=$(basename $image)
     echo -e "${BLUE}Using image $image...${NC}"
@@ -114,14 +126,14 @@ openshift-install --dir=$clusterdir create ignition-configs
 
 if [ "$platform" == "openstack" ]; then
   if [ -z "$api_ip" ] || [ -z "$public_api_ip" ]; then
-    echo -e "${RED}You need to define both api_ip and public_api_ip in your parameter file${NC}"
+    echo -e "${RED}You need to define both api_ip and public_api_ip in your parameters file${NC}"
     exit 1
   fi
 fi
 
 if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
   if [ -z "$api_ip" ]; then
-    echo -e "${RED}You need to define both api_ip in your parameter file${NC}"
+    echo -e "${RED}You need to define api_ip in your parameters file${NC}"
     exit 1
   else
     if [[ "$platform" == *openstack* ]]; then
