@@ -1,6 +1,6 @@
 *DISCLAIMER*: This is not supported in anyway by Red Hat.
 
-This repo provides a way for deploying openshift4 on any plataform and on an arbitrary number of masters and workers.
+This repo provides a way for deploying openshift4 ( or okd ) on any platform and on an arbitrary number of masters and workers.
 
 Openshift installer is used along with kcli for creation and customization of the vms.
 
@@ -87,6 +87,8 @@ export OPENSHIFT_RELEASE_IMAGE=registry.svc.ci.openshift.org/ocp/release:$VERSIO
 oc adm release extract --registry-config $PULL_SECRET --command=openshift-install --to . $OPENSHIFT_RELEASE_IMAGE
 fi
 ```
+
+There are other get_* scripts provided for retrieving a downstream nightly build of the installer or latest upstream
 
 ### Providing custom machine configs
 
