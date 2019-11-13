@@ -1,12 +1,15 @@
 #!/bin/bash
 
-IP=$(/bin/hostname -I | awk '{print $1}')
-if [ "$IP" != "" ] ; then
-  grep -q $IP /etc/resolv.conf
-  if [ "$?" != "0" ] ; then
-    sed -i 's/{{ cluster }}.{{ domain }}//' /etc/resolv.conf
-    sed -i 's/search /search {{ cluster }}.{{ domain }} /' /etc/resolv.conf
-    sed -i "/nameserver.* # coredns/d" /etc/resolv.conf
-    sed -i "0,/nameserver/s/nameserver/nameserver $IP #coredns\n&/" /etc/resolv.conf
+if [ "$2" = "dhcp4-change" ] || [ "$2" = "up" ] || [ "$2" = "connectivity-change" ]; then
+  sleep 2
+  IP=$(/bin/hostname -I | awk '{print $1}')
+  if [ "$IP" != "" ] ; then
+    grep -q $IP /etc/resolv.conf
+    if [ "$?" != "0" ] ; then
+      sed -i 's/{{ cluster }}.{{ domain }}//' /etc/resolv.conf
+      sed -i 's/search /search {{ cluster }}.{{ domain }} /' /etc/resolv.conf
+      sed -i "/nameserver.* # coredns/d" /etc/resolv.conf
+      sed -i "0,/nameserver/s/nameserver/nameserver $IP #coredns\n&/" /etc/resolv.conf
+    fi
   fi
 fi
