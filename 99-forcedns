@@ -2,6 +2,8 @@
 
 which crictl >/dev/null 2>&1
 if [ "$?" != "0" ] ; then
+  systemctl restart machine-config-daemon-pull.service
+  systemctl restart machine-config-daemon-host.service
   exit 0
 fi
 
