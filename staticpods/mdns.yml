@@ -23,7 +23,7 @@ spec:
     - "-c"
     - |
       #/bin/sh
-      NIC=$(ip r | grep default | sed 's/.*dev \(.*\) proto.*/\1/')
+      NIC=$(ip r | grep default | sed 's/.*dev \(.*\) \(proto\|metric\).*/\1/')
       IP=$(ip -4 -o addr show $NIC | awk '{print $4}' | cut -d "/" -f 1 | head -1)
       [ -z "$IP" ] && exit 1
       HOSTNAME=$(hostname -s)

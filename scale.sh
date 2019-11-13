@@ -3,7 +3,7 @@
 source common.sh
 
 client=$(kcli list host | grep X | awk -F'|' '{print $2}' | xargs)
-echo -e "${BLUE}Scaling on client $client${NC}"
+echo -e "${BLUE}Scaling on client $client ${NC}"
 kcli="kcli -C $client"
 alias kcli >/dev/null 2>&1 && kcli=$(alias kcli | awk -F "'" '{print $2}')" -C $client"
 
