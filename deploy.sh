@@ -77,12 +77,12 @@ if [ "$?" != "0" ]; then
   fi
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
-if [ $upstream == "true" ] ; then
+if [ "$upstream" == "true" ] ; then
   COS_VERSION="latest"
-  COS_TYPE="rhcos"
+  COS_TYPE="fcos"
 else
   COS_VERSION=$(echo $INSTALLER_VERSION |  sed "s/v\([0-9]*\).\([0-9]*\).*/\1\2/")
-  COS_TYPE="fcos"
+  COS_TYPE="rhcos"
 fi
 
 echo -e "${BLUE}Using installer version $INSTALLER_VERSION...${NC}"
@@ -95,7 +95,7 @@ if [ "$image" == "" ] ; then
         echo -e "${RED}Undefined image in parameters file...${NC}"
         exit 1
       fi
-      echo -e "${BLUE}Downloading rhcos image...${NC}"
+      echo -e "${BLUE}Downloading ${COS_TYPE} image...${NC}"
       kcli download image ${COS_TYPE}${COS_VERSION}
       image=$($kcli list image | grep $COS_TYPE | head -1 | awk -F'|' '{print $2}')
     fi
