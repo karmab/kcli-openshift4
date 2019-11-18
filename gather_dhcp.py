@@ -31,7 +31,7 @@ with open(paramfile) as entries:
         sys.exit(0)
     if platform in ['kubevirt', 'openstack', 'vsphere']:
         bootstrap_helper_name = "%s-bootstrap-helper" % cluster
-        bootstrap_helper_mac = data.get('bootstrap_helper__mac')
+        bootstrap_helper_mac = data.get('bootstrap_helper_mac')
         bootstrap_helper_ip = data.get('bootstrap_helper_ip')
         if bootstrap_helper_mac is None or bootstrap_helper_ip is None:
             print("")
