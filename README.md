@@ -17,9 +17,10 @@ The main features are:
 
 ## Requirements
 
+- Python yaml module for proper parsing. Use *yum install PyYAML* on fedora/centos/rhel or similar commands on other platforms.
 - Valid pull secret.
 - ssh public key.
-- latest kcli (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
+- Latest kcli (optional, *deploy.sh* will run it through podman/docker if not present). If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
 - Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
 - An unused ip in your network to use as *api_ip*. Make sure it is excluded from your dhcp server.
 - Target platform needs:
