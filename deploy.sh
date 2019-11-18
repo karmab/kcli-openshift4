@@ -125,7 +125,6 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
     dhcp_params=$(python gather_dhcp.py $paramfile)
     if [ ! -z "$dhcp_params" ] ; then 
       echo -e "${GREEN}Deploying helper dhcp node${NC}"
-      echo kcli create plan -f dhcp.yml --paramfile $paramfile -P network=$network -P prefix=$cluster -P domain=$cluster.$domain $dhcp_params $cluster
       kcli create plan -f dhcp.yml --paramfile $paramfile -P network=$network -P prefix=$cluster -P domain=$cluster.$domain $dhcp_params $cluster
     fi
   fi
