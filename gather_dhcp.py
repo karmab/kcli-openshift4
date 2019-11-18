@@ -2,6 +2,7 @@ import sys
 import yaml
 
 paramfile = sys.argv[1]
+platform = sys.argv[2]
 
 
 def get_values(data, element, field):
@@ -28,6 +29,13 @@ with open(paramfile) as entries:
             or dhcp_gateway is None or dhcp_dns is None:
         print("")
         sys.exit(0)
+    if platform in ['kubevirt', 'openstack', 'vsphere']:
+        bootstrap_helper_name = "%s-bootstrap-helper" % cluster
+        bootstrap_helper_mac = data.get('bootstrap_helper__mac')
+        bootstrap_helper_ip = data.get('bootstrap_helper_ip')
+        if bootstrap_helper_mac is None or bootstrap_helper_ip is None:
+            print("")
+            sys.exit(0)
     master_names = ['%s-master-%s' % (cluster, num) for num in range(masters)]
     worker_names = ['%s-worker-%s' % (cluster, num) for num in range(workers)]
     node_names = master_names + worker_names
@@ -40,10 +48,15 @@ with open(paramfile) as entries:
     if node_macs and node_ips and len(node_macs) == len(node_ips) and len(node_names) == len(node_macs):
         nodes = len(node_macs) + 1
         node_names.insert(0, bootstrap_name)
-        node_names = ','.join(node_names)
         node_macs.insert(0, bootstrap_mac)
-        node_macs = ','.join(node_macs)
         node_ips.insert(0, bootstrap_ip)
+        if platform in ['kubevirt', 'openstack', 'vsphere']:
+            nodes += 1
+            node_names.insert(0, bootstrap_helper_name)
+            node_macs.insert(0, bootstrap_helper_mac)
+            node_ips.insert(0, bootstrap_helper_ip)
+        node_names = ','.join(node_names)
+        node_macs = ','.join(node_macs)
         node_ips = ','.join(node_ips)
         results = "-P node_names=[%s] -P node_macs=[%s] -P node_ips=[%s] -P nodes=%s" % (node_names, node_macs,
                                                                                          node_ips, nodes)

@@ -122,7 +122,7 @@ openshift-install --dir=$clusterdir create ignition-configs
 
 if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
   if [ -f $paramfile ]; then
-    dhcp_params=$(python gather_dhcp.py $paramfile)
+    dhcp_params=$(python gather_dhcp.py $paramfile platform)
     if [ ! -z "$dhcp_params" ] ; then 
       echo -e "${GREEN}Deploying helper dhcp node${NC}"
       kcli create plan -f dhcp.yml --paramfile $paramfile -P dhcp_image=$helper_image -P network=$network -P prefix=$cluster -P domain=$cluster.$domain $dhcp_params $cluster
