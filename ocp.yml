@@ -30,6 +30,7 @@ parameters:
  image: {{ image }}
  keys: {{ keys }}
  numcpus: 2
+ enableroot: false 
  memory: {{ bootstrap_memory }}
  dns: 127.0.0.1
  nets:
@@ -72,6 +73,7 @@ parameters:
 {{ cluster }}-master-{{ num }}:
  domain: {{ cluster }}.{{ domain }} 
  image: {{ image }}
+ enableroot: false 
  keys: {{ keys }}
  numcpus: {{ numcpus }}
  memory: {{ master_memory }}
@@ -117,6 +119,7 @@ parameters:
  domain: {{ cluster }}.{{ domain }} 
  image: {{ image }}
  keys: {{ keys }}
+ enableroot: false 
  numcpus: {{ numcpus }}
  memory: {{ worker_memory }}
  autostart: {{ autostart }}
