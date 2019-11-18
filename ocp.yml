@@ -34,7 +34,7 @@ parameters:
  dns: 127.0.0.1
  nets:
   - name: {{ network }}
-{% if bootstrap_mac is not None %}
+{% if bootstrap_mac != None %}
     mac: {{ bootstrap_mac }}
 {% endif %}
  disks:
