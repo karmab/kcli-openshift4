@@ -124,6 +124,15 @@ else
 fi
 openshift-install --dir=$clusterdir create ignition-configs
 
+if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
+  if [ ! -f $paramfile ]; then
+    dhcp_params=$(python gather_dhcp.py $paramfile)
+    if [ ! -z "$dhcp_params" ] ; then 
+      kcli create plan -f dhcp.yml --paramfile $paramfile -P network=$network -P prefix=$cluster -P domain=$cluster.$domain $dhcp_params $cluster
+    fi
+  fi
+fi
+
 if [ "$platform" == "openstack" ]; then
   if [ -z "$api_ip" ] || [ -z "$public_api_ip" ]; then
     echo -e "${RED}You need to define both api_ip and public_api_ip in your parameters file${NC}"
