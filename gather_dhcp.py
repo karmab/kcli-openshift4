@@ -45,6 +45,6 @@ with open(paramfile) as entries:
         node_macs = ','.join(node_macs)
         node_ips.insert(0, bootstrap_ip)
         node_ips = ','.join(node_ips)
-        results = "-P node_names=%s -P node_macs=[%s] -P node_ips=[%s] -P nodes=%s" % (node_names, node_macs, node_ips,
-                                                                                       nodes)
+        results = "-P node_names=[%s] -P node_macs=[%s] -P node_ips=[%s] -P nodes=%s" % (node_names, node_macs,
+                                                                                         node_ips, nodes)
         print(results)
