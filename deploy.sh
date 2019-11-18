@@ -14,11 +14,7 @@ if [ "$#" == '1' ]; then
     echo -e "${RED}Specified parameter file $paramfile doesn't exist.Leaving...${NC}"
     exit 1
   else
-    while read line ; do
-        ( echo $line | grep -q ':' ) || continue
-        ( echo $line | grep -q '\[' ) && continue
-        export $(echo "$line" | cut -d: -f1 | xargs)=$(echo "$line" | cut -d: -f2 | xargs) ;
-    done < $paramfile
+    $(python gather_env.py  $paramfile)
   fi
   kcliplan="$kcli create plan --paramfile=$paramfile"
 else
