@@ -38,12 +38,13 @@ with open(paramfile) as entries:
     worker_ips = get_values(data, 'worker', 'ips')
     node_ips = master_ips + worker_ips
     if node_macs and node_ips and len(node_macs) == len(node_ips) and len(node_names) == len(node_macs):
-        nodes = len(node_macs)
+        nodes = len(node_macs) + 1
         node_names.insert(0, bootstrap_name)
         node_names = ','.join(node_names)
         node_macs.insert(0, bootstrap_mac)
         node_macs = ','.join(node_macs)
         node_ips.insert(0, bootstrap_ip)
         node_ips = ','.join(node_ips)
-        results = " -P node_macs=[%s] -P node_ips=[%s] -P nodes=%s" % (node_macs, node_ips, nodes)
+        results = "-P node_names=%s -P node_macs=[%s] -P node_ips=[%s] -P nodes=%s" % (node_names, node_macs, node_ips,
+                                                                                       nodes)
         print(results)
