@@ -3,7 +3,5 @@
 source common.sh
 
 echo -e "${BLUE}Downloading latest openshift-install from registry.svc.ci.openshift.org in current directory${NC}"
-export PULL_SECRET="openshift_pull.json"
-export VERSION=$(curl -s 'https://origin-release.svc.ci.openshift.org/graph?format=dot' | grep tag | sed 's/.*label="\(.*.\)", shape=.*/\1/' | sort | tail -1)
-export OPENSHIFT_RELEASE_IMAGE=registry.svc.ci.openshift.org/origin/release:$VERSION
-oc adm release extract --registry-config $PULL_SECRET --command=openshift-install --to . $OPENSHIFT_RELEASE_IMAGE
+VERSION=$(curl -s https://api.github.com/repos/openshift/okd/releases| grep tag_name | sed 's/.*: "\(.*\)",/\1/' | sort | tail -1)
+curl -s https://github.com/openshift/okd/releases/download/$VERSION/openshift-install-$INSTALLSYSTEM-$VERSION.tar.gz
