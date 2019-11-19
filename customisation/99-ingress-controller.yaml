@@ -4,10 +4,10 @@ metadata:
   name: default
   namespace: openshift-ingress-operator
 spec:
-  replicas: 1
+  replicas: {{ replicas }}
   endpointPublishingStrategy:
     type: HostNetwork
   nodePlacement:
     nodeSelector:
       matchLabels:
-        node-role.kubernetes.io/master: ""
+        node-role.kubernetes.io/{{ role }}: ""
