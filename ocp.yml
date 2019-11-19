@@ -21,8 +21,8 @@ parameters:
  master_ips: []
  worker_macs: []
  worker_ips: []
- boostrap_mac: 
- boostrap_ip: 
+ bootstrap_mac: 
+ bootstrap_ip: 
 
 {%- if not scale %}
 
