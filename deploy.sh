@@ -63,7 +63,7 @@ fi
 which openshift-install >/dev/null 2>&1
 if [ "$?" != "0" ]; then
   if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
-    if [ "$upstream" == "true" ] ; then
+    if [ "$upstream" == "True" ] ; then
       get_upstream_installer.sh
     else
       get_nightly_installer.sh
@@ -73,7 +73,7 @@ if [ "$?" != "0" ]; then
   fi
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
-if [ "$upstream" == "true" ] ; then
+if [ "$upstream" == "True" ] ; then
   COS_VERSION="latest"
   COS_TYPE="fcos"
 else
