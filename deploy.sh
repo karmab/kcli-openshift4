@@ -163,7 +163,7 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
     fi
   elif [ ! -f /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf ] || [ "$(grep $api_ip /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf)" == "" ] ; then
     echo -e "${BLUE}Adding wildcard for apps.$cluster.$domain in NetworkManager...${NC}"
-    sudo sh -c "echo server=/apps.$cluster.$domain/$api_ip > /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf"
+    sudo sh -c "echo address=/apps.$cluster.$domain/$api_ip > /etc/NetworkManager/dnsmasq.d/$cluster.$domain.conf"
     sudo systemctl reload NetworkManager
   fi
   if [ "$platform" == "kubevirt" ] || [ "$platform" == "openstack" ] || [ "$platform" == "vsphere" ]; then
