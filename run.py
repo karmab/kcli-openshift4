@@ -21,31 +21,11 @@ virtplatforms = ['kvm', 'kubevirt', 'ovirt', 'openstack', 'vsphere']
 cloudplatforms = ['aws', 'gcp']
 
 
-def code_path(x):
-    if x is None:
-        return None
-    result = '/%s' % x if os.path.exists('/i_am_a_container') else './%s' % x
-    return result
-
-
 def pwd_path(x):
     if x is None:
         return None
     result = '/workdir/%s' % x if os.path.exists('/i_am_a_container') else x
     return result
-
-
-def ssh_path(x):
-    if x is None:
-        return None
-    elif not os.path.exists('/i_am_a_container'):
-        return ''
-    elif os.path.exists('/root/.ssh'):
-        return '/root/.ssh'
-    elif os.path.exists('/root/.kcli'):
-        return '/root/.kcli'
-    else:
-        return ''
 
 
 def real_path(x):
@@ -83,7 +63,7 @@ def get_installer(nightly=False):
         os._exit(1)
     cmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/%s/latest/" % repo
     cmd += "openshift-install-%s-%s.tar.gz " % (INSTALLSYSTEM, version)
-    cmd += "| tar zxvf - %s/openshift-install" % pwd_path('.')
+    cmd += "| tar zxvf - > %s" % pwd_path('openshift-install')
     call(cmd, shell=True)
 
 
@@ -96,12 +76,8 @@ def get_upstream_installer():
     version = sorted([x['tag_name'] for x in data])[-1]
     cmd = "curl -Ls https://github.com/openshift/okd/releases/download/"
     cmd += "%s/openshift-install-%s-%s.tar.gz" % (version, INSTALLSYSTEM, version)
-    cmd += "| tar zxvf - %s/openshift-install" % pwd_path('.')
+    cmd += "| tar zxvf - > %s" % pwd_path('openshift-install')
     call(cmd, shell=True)
-
-
-def get_stable_installer():
-    print("prout")
 
 
 def gather_dhcp(data, platform):
@@ -150,13 +126,10 @@ def gather_dhcp(data, platform):
 
 
 def template(paramfile):
-    if os.path.exists(pwd_path(paramfile)):
-        pprint("Specified parameter file %s already there.Leaving..." % real_path(paramfile), color='red')
-        sys.exit(1)
     pprint("Generating parameter file %s" % real_path(paramfile), color='green')
-    params = get_parameters(code_path('ocp.yml'))
+    params = get_parameters('ocp.yml')
     parameters = '\n'.join([parameter.lstrip() for parameter in params.split('\n')[1:]])
-    path = pwd_path(paramfile)
+    path = paramfile
     with open(path, 'w') as f:
         f.write(parameters)
 
@@ -167,14 +140,11 @@ def scale(paramfile, workers):
     platform = config.type
     k = config.k
     pprint("Scaling on client %s" % client, color='blue')
-    if paramfile is not None:
-        if not os.path.exists(paramfile):
-            pprint("Specified parameter file %s doesn't exist.Leaving..." % real_path(paramfile), color='red')
-            sys.exit(1)
-        with open(paramfile) as entries:
-            paramdata = yaml.safe_load(entries)
-    else:
-        paramdata = {}
+    if not os.path.exists(paramfile):
+        pprint("Specified parameter file %s doesn't exist.Leaving..." % real_path(paramfile), color='red')
+        sys.exit(1)
+    with open(paramfile) as entries:
+        paramdata = yaml.safe_load(entries)
     cluster = paramdata.get('cluster', 'testk')
     config.plan(cluster, delete=True)
     image = k.info("%s-master-0" % cluster).get('image')
@@ -187,23 +157,20 @@ def scale(paramfile, workers):
     paramdata['scale'] = True
     paramdata['workers'] = workers
     if platform in virtplatforms:
-        config.plan(cluster, inputfile=code_path('ocp.yml'), overrides=paramdata)
+        config.plan(cluster, inputfile='ocp.yml', overrides=paramdata)
     elif platform in cloudplatforms:
-        config.plan(cluster, inputfile=code_path('ocp_cloud.yml'), overrides=paramdata)
+        config.plan(cluster, inputfile='ocp_cloud.yml', overrides=paramdata)
 
 
 def clean(paramfile):
     config = Kconfig()
     client = config.client
     pprint("Cleaning on client %s" % client, color='blue')
-    if paramfile is not None:
-        if not os.path.exists(paramfile):
-            pprint("Specified parameter file %s doesn't exist.Leaving..." % real_path(paramfile), color='red')
-            sys.exit(1)
-        with open(paramfile) as entries:
-            paramdata = yaml.safe_load(entries)
-    else:
-        paramdata = {}
+    if not os.path.exists(paramfile):
+        pprint("Specified parameter file %s doesn't exist.Leaving..." % real_path(paramfile), color='red')
+        sys.exit(1)
+    with open(paramfile) as entries:
+        paramdata = yaml.safe_load(entries)
     cluster = paramdata.get('cluster', 'testk')
     config.plan(cluster, delete=True)
     clusterdir = pwd_path("clusters/%s" % cluster)
@@ -220,14 +187,11 @@ def deploy(paramfile):
     platform = config.type
     pprint("Deploying on client %s" % client, color='blue')
     envname = paramfile if paramfile is not None else 'testk'
-    if paramfile is not None:
-        if not os.path.exists(paramfile):
-            pprint("Specified parameter file %s doesn't exist.Leaving..." % real_path(paramfile), color='red')
-            sys.exit(1)
-        with open(paramfile) as entries:
-            paramdata = yaml.safe_load(entries)
-    else:
-        paramdata = {}
+    if not os.path.exists(paramfile):
+        pprint("Specified parameter file %s doesn't exist.Leaving..." % real_path(paramfile), color='red')
+        sys.exit(1)
+    with open(paramfile) as entries:
+        paramdata = yaml.safe_load(entries)
     data = {'cluster': envname,
             'helper_image': 'CentOS-7-x86_64-GenericCloud.qcow2',
             'helper_sleep': 15,
@@ -239,7 +203,8 @@ def deploy(paramfile):
             'pub_key': '%s/.ssh/id_rsa.pub' % os.environ['HOME'],
             'pull_secret': 'openshift_pull.json',
             'upstream': False,
-            'force': False}
+            'force': False,
+            'macosx': False}
     data.update(paramdata)
     cluster = data.get('cluster')
     helper_image = data.get('helper_image')
@@ -253,10 +218,13 @@ def deploy(paramfile):
     masters = data.get('masters')
     workers = data.get('workers')
     tag = data.get('tag')
-    pub_key = ssh_path(data.get('pub_key'))
+    pub_key = data.get('pub_key')
     pull_secret = pwd_path(data.get('pull_secret'))
     upstream = data.get('upstream')
     force = data.get('force')
+    macosx = data.get('macosx')
+    if macosx and not os.path.exists('/i_am_a_container'):
+        macosx = False
     if platform == 'openstack' and (api_ip is None or public_api_ip is None):
         pprint("You need to define both api_ip and public_api_ip in your parameters file", color='red')
         os._exit(1)
@@ -264,17 +232,19 @@ def deploy(paramfile):
         pprint("Missing pull secret file %s" % pull_secret, color='red')
         sys.exit(1)
     if not os.path.exists(pub_key):
-        pprint("Missing public key file %s" % pub_key, color='red')
-        sys.exit(1)
+        if os.path.exists('/root/.kcli/id_rsa.pub'):
+            pub_key = '/root/.kcli/id_rsa.pub'
+        else:
+            pprint("Missing public key file %s" % pub_key, color='red')
+            sys.exit(1)
     clusterdir = pwd_path("clusters/%s" % cluster)
     if not force and os.path.exists(clusterdir):
         pprint("Please Remove existing %s first..." % clusterdir, color='red')
         sys.exit(1)
-    cwd = os.getcwd() if not os.path.exists('/i_am_a_container') else ''
-    os.environ['KUBECONFIG'] = "%s/%s/auth/kubeconfig" % (cwd, clusterdir)
+    os.environ['KUBECONFIG'] = "%s/auth/kubeconfig" % clusterdir
     OC = find_executable('oc')
     if OC is None:
-        if not os.path.exists('oc'):
+        if not os.path.exists(pwd_path('oc')):
             pprint("Downloading oc in current directory", color='blue')
             occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/%s/oc.tar.gz" % SYSTEM
             occmd += "| tar zxvf - > %s/oc" % pwd_path('.')
@@ -290,7 +260,9 @@ def deploy(paramfile):
             else:
                 get_installer()
         INSTALLER = pwd_path("openshift-install")
+    INSTALLER = os.path.abspath(INSTALLER)
     INSTALLER_VERSION = os.popen('%s version' % INSTALLER).readlines()[0].split(" ")[1].strip()
+    pprint("Using installer version %s" % INSTALLER_VERSION, color='blue')
     if upstream:
         COS_VERSION = "latest"
         COS_TYPE = "fcos"
@@ -308,7 +280,11 @@ def deploy(paramfile):
                                         download=True, update_profile=False)
             if result['result'] != 'success':
                 os._exit(1)
+            images = [v for v in k.volumes() if image.startswith("%s%s" % (COS_TYPE, COS_VERSION))]
+            image = images[0]
+        pprint("Using image %s" % image, color='blue')
     else:
+        pprint("Checking if image %s is available" % image, color='blue')
         images = [v for v in k.volumes() if image in v]
         if not images:
             pprint("Missing %s. Indicate correct image in your parameters file..." % image, color='red')
@@ -318,18 +294,16 @@ def deploy(paramfile):
         os.mkdir(clusterdir)
     data['pub_key'] = open(pub_key).read().strip()
     data['pull_secret'] = re.sub(r"\s", "", open(pull_secret).read())
-    installconfig = config.process_inputfile(cluster, code_path("install-config.yaml"), overrides=data)
+    installconfig = config.process_inputfile(cluster, "install-config.yaml", overrides=data)
     with open("%s/install-config.yaml" % clusterdir, 'w') as f:
         f.write(installconfig)
     call('%s --dir=%s create manifests' % (INSTALLER, clusterdir), shell=True)
-    for f in [f for f in glob(code_path("customisation/*.yaml"))]:
+    for f in [f for f in glob("customisation/*.yaml")]:
         if '99-ingress-controller.yaml' in f:
-            replicas = masters if workers == 0 else workers
-            role = 'master' if workers == 0 else 'worker'
-            installconfig = config.process_inputfile(cluster, code_path(f),
-                                                     overrides={'replicas': replicas, 'role': role})
-            with open("%s/openshift/99-ingress-controller.yaml" % code_path(clusterdir), 'w') as f:
-                f.write(installconfig)
+            if workers == 0:
+                installconfig = config.process_inputfile(cluster, f, overrides={'replicas': masters})
+                with open("%s/openshift/99-ingress-controller.yaml" % clusterdir, 'w') as f:
+                    f.write(installconfig)
         else:
             copy2(f, "%s/openshift" % clusterdir)
     call('%s --dir=%s create ignition-configs' % (INSTALLER, clusterdir), shell=True)
@@ -338,7 +312,7 @@ def deploy(paramfile):
         pprint("Deploying helper dhcp node" % image, color='green')
         staticdata.update({'network': network, 'dhcp_image': helper_image, 'prefix': cluster,
                           domain: '%s.%s' % (cluster, domain)})
-        config.plan(cluster, inputfile=code_path('dhcp.yml'), overrides=staticdata)
+        config.plan(cluster, inputfile='dhcp.yml', overrides=staticdata)
     if platform in virtplatforms:
         if api_ip is None:
             pprint("You need to define api_ip in your parameters file", color='red')
@@ -399,7 +373,9 @@ def deploy(paramfile):
                                                                    'oauth-openshift.apps',
                                                                    'prometheus-k8s-openshift-monitoring.apps']]
             entries = ' '.join(entries)
-            call("sudo sh -c 'echo %s %s >> /etc/hosts'" % (host_ip, entries), shell=True)
+            call("sh -c 'echo %s %s >> /etc/hosts'" % (host_ip, entries), shell=True)
+            if os.path.exists('/etcdir/hosts'):
+                call("sh -c 'echo %s %s >> /etcdir/hosts'" % (host_ip, entries), shell=True)
         if platform in ['kubevirt', 'openstack', 'vsphere']:
             # bootstrap ignition is too big for kubevirt/openstack/vsphere so we deploy a temporary web server
             overrides = {}
@@ -473,7 +449,7 @@ def deploy(paramfile):
         sedcmd += ' > %s/bootstrap.ign' % clusterdir
         call(sedcmd, shell=True)
     if platform in virtplatforms:
-        config.plan(cluster, inputfile=code_path('ocp.yml'), overrides=paramdata)
+        config.plan(cluster, inputfile='ocp.yml', overrides=paramdata)
         call('%s --dir=%s wait-for bootstrap-complete || exit 1' % (INSTALLER, clusterdir), shell=True)
         todelete = ["%s-bootstrap" % cluster]
         if platform in ['kubevirt', 'openstack', 'vsphere']:
@@ -481,7 +457,7 @@ def deploy(paramfile):
         for vm in todelete:
             k.delete(vm)
     else:
-        config.plan(cluster, inputfile=code_path('ocp_cloud.yml'), overrides=paramdata)
+        config.plan(cluster, inputfile='ocp_cloud.yml', overrides=paramdata)
         call('%s --dir=%s wait-for bootstrap-complete || exit 1' % (INSTALLER, clusterdir), shell=True)
         todelete = ["%s-bootstrap" % cluster, "%s-bootstrap-helper" % cluster]
         for vm in todelete:
@@ -490,7 +466,7 @@ def deploy(paramfile):
         copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
-            w.write(workerdata)
+            w.write(str(workerdata))
     if workers > 0:
         call("%s adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-" % OC,
              shell=True)
@@ -499,7 +475,11 @@ def deploy(paramfile):
     pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
     call(installcommand, shell=True)
     pprint("Deploying certs autoapprover cronjob", color='blue')
-    call("%s create -f %s" % (OC, code_path('autoapprovercron.yml')), shell=True)
+    call("%s create -f %s" % (OC, 'autoapprovercron.yml'), shell=True)
+    if macosx:
+        occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/%s/oc.tar.gz" % 'macosx'
+        occmd += "| tar zxvf - > %s/oc" % pwd_path('.')
+        call(occmd, shell=True)
 
 
 if __name__ == '__main__':
@@ -510,13 +490,12 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--workers', help='Total number of workers (used when scaling)', type=int)
     parser.add_argument('paramfile', help='Parameter file')
     args = parser.parse_args()
+    workers = args.workers
     action_scale = args.scale
     action_clean = args.clean
     action_template = args.template
     paramfile = args.paramfile
-    if paramfile is not None:
-        paramfile = pwd_path(paramfile)
-    workers = args.workers
+    paramfile = '/workdir/%s' % paramfile if os.path.exists('/i_am_a_container') else paramfile
     if action_clean:
         clean(paramfile)
     elif action_scale:

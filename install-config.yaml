@@ -19,4 +19,4 @@ platform:
   none: {}
 pullSecret: '{{ pull_secret }}'
 sshKey: |
-    {{ pub_key }}
+  {{ pub_key }}
