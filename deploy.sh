@@ -109,14 +109,14 @@ fi
 mkdir -p $clusterdir || true
 pub_key=`cat $pub_key`
 pull_secret=`cat $pull_secret | tr -d [:space:]`
-envsubst < install-config.yaml > $clusterdir/install-config.yaml
+kcli render -f install-config.yaml -P cluster=$cluster -P domain=$domain -P masters=$masters -P workers=$workers -P pub_key="$pub_key" -P pull_secret=$pull_secret > $clusterdir/install-config.yaml
 
 openshift-install --dir=$clusterdir create manifests
 cp customisation/* $clusterdir/openshift
 if [ "$workers" -gt "0" ]; then
   rm -f $clusterdir/openshift/99-ingress-controller.yaml
 else
-  sed -i "s/1/$masters/" $clusterdir/openshift/99-ingress-controller.yaml
+  kcli render -f customisation/99-ingress-controller.yaml -P replicas=$masters > $clusterdir/openshift/99-ingress-controller.yaml
 fi
 openshift-install --dir=$clusterdir create ignition-configs
 
