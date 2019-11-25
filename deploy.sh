@@ -13,31 +13,15 @@ if [ "$#" == '1' ]; then
   if [ ! -f $paramfile ]; then
     echo -e "${RED}Specified parameter file $paramfile doesn't exist.Leaving...${NC}"
     exit 1
-  else
-    $(python gather_env.py  $paramfile)
   fi
   kcliplan="$kcli create plan --paramfile=$paramfile"
 else
-  envname="testk"
-  kcliplan="$kcli create plan"
+  echo -e "${RED}You need to specify a parameter file.Leaving...${NC}"
+  exit 1
 fi
 
-export cluster="${cluster:-$envname}"
-helper_image="${helper_image:-CentOS-7-x86_64-GenericCloud.qcow2}"
-helper_sleep="${helper_sleep:-15}"
-image="${image:-}"
-api_ip="${api_ip:-}"
-public_api_ip="${public_api_ip:-}"
-bootstrap_api_ip="${bootstrap_api_ip:-}"
-export domain="${domain:-karmalabs.com}"
-network="${network:-default}"
-export masters="${masters:-1}"
-export workers="${workers:-0}"
-tag="${tag:-cnvlab}"
-export pub_key="${pubkey:-$HOME/.ssh/id_rsa.pub}"
-export pull_secret="${pull_secret:-openshift_pull.json}"
-export upstream="${upstream:-false}"
-force="${force:-false}"
+kcli render -f env.sh --paramfile $paramfile -i > /tmp/env.sh
+source /tmp/env.sh
 
 if [ ! -f $pull_secret ] ; then
  echo -e "${RED}Missing pull secret file $pull_secret ${NC}"
@@ -121,12 +105,10 @@ fi
 openshift-install --dir=$clusterdir create ignition-configs
 
 if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platform" == *vsphere* ]]; then
-  if [ -f $paramfile ]; then
-    dhcp_params=$(python gather_dhcp.py $paramfile platform)
-    if [ ! -z "$dhcp_params" ] ; then 
-      echo -e "${GREEN}Deploying helper dhcp node${NC}"
-      kcli create plan -f dhcp.yml --paramfile $paramfile -P dhcp_image=$helper_image -P network=$network -P prefix=$cluster -P domain=$cluster.$domain $dhcp_params $cluster
-    fi
+  if [ ! -z $nodes_mac ] ; then
+    dhcp_params="-P node_names=$node_names -P node_macs=$node_macs -P node_ips=$node_ips -P nodes=$nodes"
+    echo -e "${GREEN}Deploying helper dhcp node${NC}"
+    kcli create plan -f dhcp.yml --paramfile $paramfile -P dhcp_image=$helper_image -P network=$network -P prefix=$cluster -P domain=$cluster.$domain $dhcp_params $cluster
   fi
 fi
 
@@ -184,7 +166,7 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
         fi
         echo -e "${BLUE}Using helper image $helper_image${NC}"
       else
-        echo -e "${BLUE}Checking if image $image is available...${NC}"
+        echo -e "${BLUE}Checking if helper_image $helper_image is available...${NC}"
         $kcli list image | grep -q $helper_image 
         if [ "$?" != "0" ]; then
           echo -e "${RED}Missing image $helper_image. Indicate correct helper image in your parameters file...${NC}"
@@ -199,7 +181,7 @@ if [[ "$platform" == *virt* ]] || [[ "$platform" == *openstack* ]] || [[ "$platf
         iptype="ip"
       fi
     fi
-    $kcli create vm -p $helper_image -P plan=$cluster -P nets=[$network] $helper_parameters $cluster-bootstrap-helper
+    $kcli create vm -p $helper_image -P plan=$cluster -P nets=["$network"] $helper_parameters $cluster-bootstrap-helper
     while [ "$bootstrap_api_ip" == "" ] ; do
       bootstrap_api_ip=$($kcli info vm -f $iptype -v $cluster-bootstrap-helper)
       echo -e "${BLUE}Waiting 5s for bootstrap helper node to be running...${NC}"

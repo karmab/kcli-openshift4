@@ -8,7 +8,7 @@ from kvirt.config import Kconfig
 from kvirt.common import pprint, get_parameters
 import os
 import re
-from shutil import copy2, rmtree
+from shutil import copy2, rmtree, move
 from subprocess import call
 import sys
 from time import sleep
@@ -46,11 +46,10 @@ def get_values(data, element, field):
     return results
 
 
-def get_installer(nightly=False):
+def get_installer(nightly=False, macosx=False):
     repo = 'ocp-dev-preview' if nightly else 'ocp'
-    INSTALLSYSTEM = 'mac' if os.path.exists('/Users') else 'linux'
-    msg = 'Downloading latest openshift-install from'
-    'https://mirror.openshift.com/pub/openshift-v4/clients/%s in current directory' % repo
+    INSTALLSYSTEM = 'mac' if os.path.exists('/Users') or macosx else 'linux'
+    msg = 'Downloading openshift-install from https://mirror.openshift.com/pub/openshift-v4/clients/%s' % repo
     pprint(msg, color='blue')
     r = urlopen("https://mirror.openshift.com/pub/openshift-v4/clients/%s/latest/release.txt" % repo).readlines()
     version = None
@@ -63,20 +62,22 @@ def get_installer(nightly=False):
         os._exit(1)
     cmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/%s/latest/" % repo
     cmd += "openshift-install-%s-%s.tar.gz " % (INSTALLSYSTEM, version)
-    cmd += "| tar zxvf - > %s" % pwd_path('openshift-install')
+    cmd += "| tar zxf - openshift-install"
+    cmd += "; chmod 700 openshift-install"
     call(cmd, shell=True)
 
 
-def get_upstream_installer():
-    INSTALLSYSTEM = 'mac' if os.path.exists('/Users') else 'linux'
-    msg = 'Downloading latest okd openshift-install from github in current directory'
+def get_upstream_installer(macosx=False):
+    INSTALLSYSTEM = 'mac' if os.path.exists('/Users') or macosx else 'linux'
+    msg = 'Downloading okd openshift-install from github in current directory'
     pprint(msg, color='blue')
     r = urlopen("https://api.github.com/repos/openshift/okd/releases")
     data = json.loads(r.read())
     version = sorted([x['tag_name'] for x in data])[-1]
     cmd = "curl -Ls https://github.com/openshift/okd/releases/download/"
     cmd += "%s/openshift-install-%s-%s.tar.gz" % (version, INSTALLSYSTEM, version)
-    cmd += "| tar zxvf - > %s" % pwd_path('openshift-install')
+    cmd += "| tar zxf - openshift-install"
+    cmd += "; chmod 700 openshift-install"
     call(cmd, shell=True)
 
 
@@ -131,7 +132,9 @@ def template(paramfile):
     parameters = '\n'.join([parameter.lstrip() for parameter in params.split('\n')[1:]])
     path = paramfile
     with open(path, 'w') as f:
+        f.write("version: stable\n")
         f.write(parameters)
+        f.write("macosx: False\n")
 
 
 def scale(paramfile, workers):
@@ -180,7 +183,8 @@ def clean(paramfile):
 
 
 def deploy(paramfile):
-    SYSTEM = 'macosx' if os.path.exists('/Users') else 'linux'
+    ocdownloaded = False
+    # installerdownloaded = False
     config = Kconfig()
     k = config.k
     client = config.client
@@ -202,10 +206,14 @@ def deploy(paramfile):
             'tag': 'cnvlab',
             'pub_key': '%s/.ssh/id_rsa.pub' % os.environ['HOME'],
             'pull_secret': 'openshift_pull.json',
-            'upstream': False,
-            'force': False,
+            'version': 'nightly',
             'macosx': False}
     data.update(paramdata)
+    version = data.get('version')
+    if version not in ['nightly', 'upstream']:
+        pprint("Using stable version", color='blue')
+    else:
+        pprint("Using %s version" % version, color='blue')
     cluster = data.get('cluster')
     helper_image = data.get('helper_image')
     # helper_sleep = data.get('helper_sleep')
@@ -220,8 +228,6 @@ def deploy(paramfile):
     tag = data.get('tag')
     pub_key = data.get('pub_key')
     pull_secret = pwd_path(data.get('pull_secret'))
-    upstream = data.get('upstream')
-    force = data.get('force')
     macosx = data.get('macosx')
     if macosx and not os.path.exists('/i_am_a_container'):
         macosx = False
@@ -232,38 +238,39 @@ def deploy(paramfile):
         pprint("Missing pull secret file %s" % pull_secret, color='red')
         sys.exit(1)
     if not os.path.exists(pub_key):
-        if os.path.exists('/root/.kcli/id_rsa.pub'):
-            pub_key = '/root/.kcli/id_rsa.pub'
+        if os.path.exists('/%s/.kcli/id_rsa.pub' % os.environ['HOME']):
+            pub_key = '%s/.kcli/id_rsa.pub' % os.environ['HOME']
         else:
             pprint("Missing public key file %s" % pub_key, color='red')
             sys.exit(1)
     clusterdir = pwd_path("clusters/%s" % cluster)
-    if not force and os.path.exists(clusterdir):
+    if os.path.exists(clusterdir):
         pprint("Please Remove existing %s first..." % clusterdir, color='red')
         sys.exit(1)
     os.environ['KUBECONFIG'] = "%s/auth/kubeconfig" % clusterdir
-    OC = find_executable('oc')
-    if OC is None:
-        if not os.path.exists(pwd_path('oc')):
-            pprint("Downloading oc in current directory", color='blue')
-            occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/%s/oc.tar.gz" % SYSTEM
-            occmd += "| tar zxvf - > %s/oc" % pwd_path('.')
-            call(occmd, shell=True)
-        OC = pwd_path("oc")
-    INSTALLER = find_executable('openshift-install')
+    if find_executable('oc') is None:
+        SYSTEM = 'macosx' if os.path.exists('/Users') else 'linux'
+        pprint("Downloading oc in current directory", color='blue')
+        occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/%s/oc.tar.gz" % SYSTEM
+        occmd += "| tar zxf - oc"
+        occmd += "; chmod 700 oc"
+        call(occmd, shell=True)
+        ocdownloaded = True
+        if not macosx and os.path.exists('/i_am_a_container'):
+            move('oc', '/workdir')
     if find_executable('openshift-install') is None:
-        if not os.path.exists(pwd_path('openshift-install')):
-            if 'registry.svc.ci.openshift.org' in pull_secret:
-                get_installer(nightly=True)
-            elif upstream:
-                get_upstream_installer()
-            else:
-                get_installer()
-        INSTALLER = pwd_path("openshift-install")
-    INSTALLER = os.path.abspath(INSTALLER)
-    INSTALLER_VERSION = os.popen('%s version' % INSTALLER).readlines()[0].split(" ")[1].strip()
+        if version == 'nightly':
+            get_installer(nightly=True)
+        elif version == 'upstream':
+            get_upstream_installer()
+        else:
+            get_installer()
+        # installerdownloaded = True
+        if not macosx and os.path.exists('/i_am_a_container'):
+            move('openshift-install', '/workdir')
+    INSTALLER_VERSION = os.popen('openshift-install version').readlines()[0].split(" ")[1].strip()
     pprint("Using installer version %s" % INSTALLER_VERSION, color='blue')
-    if upstream:
+    if version == 'upstream':
         COS_VERSION = "latest"
         COS_TYPE = "fcos"
     else:
@@ -291,13 +298,13 @@ def deploy(paramfile):
             os._exit(1)
     paramdata['image'] = image
     if not os.path.exists(clusterdir):
-        os.mkdir(clusterdir)
+        os.makedirs(clusterdir)
     data['pub_key'] = open(pub_key).read().strip()
     data['pull_secret'] = re.sub(r"\s", "", open(pull_secret).read())
     installconfig = config.process_inputfile(cluster, "install-config.yaml", overrides=data)
     with open("%s/install-config.yaml" % clusterdir, 'w') as f:
         f.write(installconfig)
-    call('%s --dir=%s create manifests' % (INSTALLER, clusterdir), shell=True)
+    call('openshift-install --dir=%s create manifests' % clusterdir, shell=True)
     for f in [f for f in glob("customisation/*.yaml")]:
         if '99-ingress-controller.yaml' in f:
             if workers == 0:
@@ -306,7 +313,7 @@ def deploy(paramfile):
                     f.write(installconfig)
         else:
             copy2(f, "%s/openshift" % clusterdir)
-    call('%s --dir=%s create ignition-configs' % (INSTALLER, clusterdir), shell=True)
+    call('openshift-install --dir=%s create ignition-configs' % clusterdir, shell=True)
     staticdata = gather_dhcp(data, platform)
     if staticdata:
         pprint("Deploying helper dhcp node" % image, color='green')
@@ -450,36 +457,40 @@ def deploy(paramfile):
         call(sedcmd, shell=True)
     if platform in virtplatforms:
         config.plan(cluster, inputfile='ocp.yml', overrides=paramdata)
-        call('%s --dir=%s wait-for bootstrap-complete || exit 1' % (INSTALLER, clusterdir), shell=True)
+        call('openshift-install --dir=%s wait-for bootstrap-complete || exit 1' % clusterdir, shell=True)
         todelete = ["%s-bootstrap" % cluster]
         if platform in ['kubevirt', 'openstack', 'vsphere']:
             todelete.append("%s-bootstrap-helper" % cluster)
         for vm in todelete:
+            pprint("Deleting %s" % vm)
             k.delete(vm)
     else:
         config.plan(cluster, inputfile='ocp_cloud.yml', overrides=paramdata)
-        call('%s --dir=%s wait-for bootstrap-complete || exit 1' % (INSTALLER, clusterdir), shell=True)
+        call('openshift-install --dir=%s wait-for bootstrap-complete || exit 1' % clusterdir, shell=True)
         todelete = ["%s-bootstrap" % cluster, "%s-bootstrap-helper" % cluster]
         for vm in todelete:
+            pprint("Deleting %s" % vm)
             k.delete(vm)
+    if workers > 0:
+        call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
+             shell=True)
+    installcommand = 'openshift-install --dir=%s wait-for install-complete' % clusterdir
+    installcommand = "%s | %s" % (installcommand, installcommand)
+    pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
+    call(installcommand, shell=True)
+    pprint("Deploying certs autoapprover cronjob", color='blue')
     if platform in virtplatforms:
         copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
             w.write(str(workerdata))
-    if workers > 0:
-        call("%s adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-" % OC,
-             shell=True)
-    installcommand = '%s --dir=%s wait-for install-complete' % (INSTALLER, clusterdir)
-    installcommand = "%s | %s" % (installcommand, installcommand)
-    pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
-    call(installcommand, shell=True)
-    pprint("Deploying certs autoapprover cronjob", color='blue')
-    call("%s create -f %s" % (OC, 'autoapprovercron.yml'), shell=True)
-    if macosx:
-        occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/%s/oc.tar.gz" % 'macosx'
-        occmd += "| tar zxvf - > %s/oc" % pwd_path('.')
+    call("oc create -f autoapprovercron.yml", shell=True)
+    if ocdownloaded and macosx and os.path.exists('/i_am_a_container'):
+        occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/maxosx/oc.tar.gz"
+        occmd += "| tar zxf - oc"
+        occmd += "; chmod 700 oc"
         call(occmd, shell=True)
+        move('oc', '/workdir/oc')
 
 
 if __name__ == '__main__':
@@ -495,7 +506,9 @@ if __name__ == '__main__':
     action_clean = args.clean
     action_template = args.template
     paramfile = args.paramfile
-    paramfile = '/workdir/%s' % paramfile if os.path.exists('/i_am_a_container') else paramfile
+    if os.path.exists('/i_am_a_container'):
+        os.environ['PATH'] = '/:/workdir:%s' % os.environ['PATH']
+        paramfile = '/workdir/%s' % paramfile
     if action_clean:
         clean(paramfile)
     elif action_scale:

@@ -36,9 +36,3 @@ if [ "$?" != "0" ] ; then
   echo -e "${RED}kcli not found. Install it from copr karmab/kcli or pull container${NC}"
   exit 1
 fi
-
-python -c "import yaml" >/dev/null 2>&1
-if [ "$?" != "0" ] ; then
-  echo -e "${RED} python yaml module not found. Install it first${NC}"
-  exit 1
-fi
