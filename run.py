@@ -149,7 +149,6 @@ def scale(paramfile, workers):
     with open(paramfile) as entries:
         paramdata = yaml.safe_load(entries)
     cluster = paramdata.get('cluster', 'testk')
-    config.plan(cluster, delete=True)
     image = k.info("%s-master-0" % cluster).get('image')
     if image is None:
         pprint("Missing image...", color='red')
