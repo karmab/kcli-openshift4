@@ -14,7 +14,7 @@ before_install:
 script:
 - find . -name \*.py -exec pep8 --ignore=E402,W504 --max-line-length=120 {} +
 - find . -name '*.py' | misspellings -f -
-- docker build -t karmab/kcli-openshift4 -f .
+- docker build -t karmab/kcli-openshift4 .
 - docker run -it --rm karmab/kcli-openshift4
 after_success:
 - if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == 'false' ] ; then docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD ; docker push karmab/kcli-openshift4:latest ; fi
