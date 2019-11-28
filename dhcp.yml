@@ -4,7 +4,6 @@ parameters:
  memory: 2048
  prefix: prout
  domain: karmalabs.com
- nodes:
  node_macs: []
  node_ips: []
  node_names: []
