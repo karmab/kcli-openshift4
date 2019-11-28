@@ -1,4 +1,5 @@
 envname={{ cluster|default('testk') }}
+version={{ version|default('nightly') }}
 cluster={{ cluster|default('testk') }}
 helper_image={{ helper_image|default('CentOS-7-x86_64-GenericCloud.qcow2') }}
 helper_sleep={{ helper_sleep|default(15) }}

@@ -35,10 +35,11 @@ The main features are:
 
 First you need to create a parameter file similar to [*parameters.yml.sample*](parameters.yml.sample) and tweak the values you want:
 
+- *version* name. You can choose between nightly, stable and upstream. Defaults to `nightly`
 - *cluster* name. Defaults to `testk`
 - *domain* name. For cloud platforms, it should point to a domain name you have access to.Defaults to `karmalabs.com`
 - *pub_key* location. Defaults to `$HOME/.ssh/id_rsa.pub`
-- *pull_secret* location. Defaults to `./openshift_pull.json`
+- *pull_secret* location. Defaults to `./openshift_pull.json`. You can omit this parameter when you set version to `upstream`
 - *image* rhcos image to use (should be qemu for libvirt/kubevirt and openstack one for ovirt/openstack).
 - *helper_image* which image to use when deploying temporary vms (defaults to `CentOS-7-x86_64-GenericCloud.qcow2`)
 - *helper_sleep*. Defaults to `15`. Number of seconds to wait when deploying the bootstrap helper node on openstack/kubevirt/vsphere before sshing into it

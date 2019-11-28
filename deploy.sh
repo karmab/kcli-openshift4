@@ -23,6 +23,10 @@ fi
 kcli render -f env.sh --paramfile $paramfile -i > /tmp/env.sh
 source /tmp/env.sh
 
+if [ "$version" == "upstream" ] ; then
+  pull_secret="fake_pull.json"
+fi 
+
 if [ ! -f $pull_secret ] ; then
  echo -e "${RED}Missing pull secret file $pull_secret ${NC}"
  exit 1
@@ -47,7 +51,7 @@ fi
 which openshift-install >/dev/null 2>&1
 if [ "$?" != "0" ]; then
   if [ "$( grep registry.svc.ci.openshift.org $pull_secret )" != "" ] ; then
-    if [ "$upstream" == "True" ] ; then
+    if [ "$version" == "upstream" ] ; then
       get_upstream_installer.sh
     else
       get_nightly_installer.sh
@@ -57,7 +61,7 @@ if [ "$?" != "0" ]; then
   fi
 fi
 INSTALLER_VERSION=$(openshift-install version | head -1 | cut -d" " -f2)
-if [ "$upstream" == "True" ] ; then
+if [ "$version" == "upstream" ] ; then
   COS_VERSION="latest"
   COS_TYPE="fcos"
 else
