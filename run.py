@@ -306,10 +306,10 @@ def deploy(paramfile):
     call('openshift-install --dir=%s create manifests' % clusterdir, shell=True)
     for f in [f for f in glob("customisation/*.yaml")]:
         if '99-ingress-controller.yaml' in f:
-            if workers == 0:
-                installconfig = config.process_inputfile(cluster, f, overrides={'replicas': masters})
-                with open("%s/openshift/99-ingress-controller.yaml" % clusterdir, 'w') as f:
-                    f.write(installconfig)
+            ingressrole = 'master' if workers == 0 else 'worker'
+            installconfig = config.process_inputfile(cluster, f, overrides={'replicas': masters, 'role': ingressrole})
+            with open("%s/openshift/99-ingress-controller.yaml" % clusterdir, 'w') as f:
+                f.write(installconfig)
         else:
             copy2(f, "%s/openshift" % clusterdir)
     call('openshift-install --dir=%s create ignition-configs' % clusterdir, shell=True)

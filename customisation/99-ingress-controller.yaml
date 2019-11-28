@@ -10,4 +10,4 @@ spec:
   nodePlacement:
     nodeSelector:
       matchLabels:
-        node-role.kubernetes.io/master: ""
+        node-role.kubernetes.io/{{ role }}: ""
