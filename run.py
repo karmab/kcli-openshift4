@@ -420,11 +420,12 @@ def deploy(paramfile):
                 sleep(5)
             sleep(5)
             cmd = "iptables -F ; yum -y install httpd ; systemctl start httpd"
-            sshcmd = k.ssh(bootstrap_helper_name, user='root', tunnel=config.tunnel, insecure=config.insecure, cmd=cmd)
+            sshcmd = k.ssh(bootstrap_helper_name, user='root', tunnel=config.tunnel, insecure=True, cmd=cmd)
             os.system(sshcmd)
             source, destination = "%s/bootstrap.ign" % clusterdir, "/var/www/html/bootstrap"
-            k.scp(bootstrap_helper_name, user='root', source=source, destination=destination, tunnel=config.tunnel,
-                  download=False)
+            scpcmd = k.scp(bootstrap_helper_name, user='root', source=source, destination=destination,
+                           tunnel=config.tunnel, download=False, insecure=True)
+            os.system(scpcmd)
             sedcmd = 'sed "s@https://api-int.%s.%s:22623/config/master@http://%s/bootstrap@" ' % (cluster, domain,
                                                                                                   bootstrap_api_ip)
             sedcmd += '%s/master.ign' % clusterdir
@@ -445,11 +446,12 @@ def deploy(paramfile):
             sleep(5)
         sleep(5)
         cmd = "iptables -F ; yum -y install httpd ; systemctl start httpd"
-        sshcmd = k.ssh(bootstrap_helper_name, user='root', tunnel=config.tunnel, insecure=config.insecure, cmd=cmd)
+        sshcmd = k.ssh(bootstrap_helper_name, user='root', tunnel=config.tunnel, insecure=True, cmd=cmd)
         os.system(sshcmd)
         source, destination = "%s/bootstrap.ign" % clusterdir, "/var/www/html/bootstrap"
-        k.scp(bootstrap_helper_name, user='root', source=source, destination=destination, tunnel=config.tunnel,
-              download=False)
+        scpcmd = k.scp(bootstrap_helper_name, user='root', source=source, destination=destination,
+                       tunnel=config.tunnel, download=False, insecure=True)
+        os.system(scpcmd)
         sedcmd = 'sed "s@https://api-int.%s.%s:22623/config/master@' % (cluster, domain)
         sedcmd += 'http://%s-bootstrap-helper.%s.%s/bootstrap@ "' % (cluster, domain)
         sedcmd += '%s/master.ign' % clusterdir
