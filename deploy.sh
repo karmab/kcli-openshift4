@@ -102,9 +102,9 @@ kcli render -f install-config.yaml -P cluster=$cluster -P domain=$domain -P mast
 openshift-install --dir=$clusterdir create manifests
 cp customisation/* $clusterdir/openshift
 if [ "$workers" -gt "0" ]; then
-  kcli render -f customisation/99-ingress-controller.yaml -P replicas=$masters -P role=master > $clusterdir/openshift/99-ingress-controller.yaml
-else
   kcli render -f customisation/99-ingress-controller.yaml -P replicas=$workers -P role=worker > $clusterdir/openshift/99-ingress-controller.yaml
+else
+  kcli render -f customisation/99-ingress-controller.yaml -P replicas=$masters -P role=master > $clusterdir/openshift/99-ingress-controller.yaml
 fi
 openshift-install --dir=$clusterdir create ignition-configs
 

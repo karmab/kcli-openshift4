@@ -307,7 +307,8 @@ def deploy(paramfile):
     for f in [f for f in glob("customisation/*.yaml")]:
         if '99-ingress-controller.yaml' in f:
             ingressrole = 'master' if workers == 0 else 'worker'
-            installconfig = config.process_inputfile(cluster, f, overrides={'replicas': masters, 'role': ingressrole})
+            replicas = masters if workers == 0 else workers
+            installconfig = config.process_inputfile(cluster, f, overrides={'replicas': replicas, 'role': ingressrole})
             with open("%s/openshift/99-ingress-controller.yaml" % clusterdir, 'w') as f:
                 f.write(installconfig)
         else:
