@@ -28,6 +28,7 @@ The main features are:
 - For Libvirt, support for fw_cfg in qemu (install qemu-kvm-ev on centos for instance).
 - Target platform needs ignition support (for Ovirt/Rhv, this means >= 4.3.4).
 - On Openstack, you will need to create a network with port security disabled (as we need a vip to be reachable on the masters). You will also need to create two ports on this network and map them to floating ips. Put the corresponding api_ip and public_api_ip in your parameter file. You can use [openstack.sh.sample](openstack.sh.sample) as a starting point. You also need to open relevant ports (80, 443, 6443 and 22623) in your security groups.
+- If running through kcli-openshift4 container, make sure your user has write access to /etc/hosts file to allow editing of this file
 
 ## How to Use
 

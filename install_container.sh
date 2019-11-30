@@ -37,20 +37,17 @@ case $shell in
 bash|zsh)
   shellfile="$HOME/.bashrc"
   [ "$shell" == zsh ] && shellfile="$HOME/.zshrc" 
-  grep -q kcli-openshift4= $shellfile || echo alias kcli-openshift4=\'$engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $SSHVOLUME $VOLUMES '-v $PWD:/workdir -v /var/tmp:/ignitiondir karmab/kcli-openshift4'\' >> $shellfile
-  alias kcli-openshift4="$engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $SSHVOLUME $VOLUMES -v $PWD:/workdir -v /var/tmp:/ignitiondir karmab/kcli-openshift4"
+  grep -q kcli-openshift4= $shellfile || echo alias kcli-openshift4=\'$engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $SSHVOLUME $VOLUMES '-v $PWD:/workdir -v /var/tmp:/ignitiondir -v /etc:/etcdir karmab/kcli-openshift4'\' >> $shellfile
   ;;
 fish)
   shellfile="$HOME/.config/fish/config.fish"
   [ ! -d ~/.config/fish ] && mkdir -p ~/.config/fish
-  grep -q 'kcli-openshift4 ' $shellfile || echo alias kcli-openshift4 $engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $SSHVOLUME $VOLUMES '-v $PWD:/workdir -v /var/tmp:/ignitiondir karmab/kcli-openshift4' >> $shellfile
-  alias kcli-openshift4 $engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $SSHVOLUME $VOLUMES -v $PWD:/workdir -v /var/tmp:/ignitiondir karmab/kcli-openshift4
+  grep -q 'kcli-openshift4 ' $shellfile || echo alias kcli-openshift4 $engine run --net host -it --rm --security-opt label=disable -v $HOME/.kcli:/root/.kcli $SSHVOLUME $VOLUMES '-v $PWD:/workdir -v /var/tmp:/ignitiondir -v /etc:/etcdir karmab/kcli-openshift4' >> $shellfile
   ;;
 *)
   echo -e "${RED}Installing aliases for $shell is not supported :(${NC}"
   ;;
 esac
-  shopt -s expand_aliases
   echo -e """${GREEN}Installed kcli-openshift4
 Launch a new shell for alias kcli-openshift4 to work${NC}"""
 else
