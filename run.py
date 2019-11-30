@@ -182,8 +182,6 @@ def clean(paramfile):
 
 
 def deploy(paramfile):
-    ocdownloaded = False
-    # installerdownloaded = False
     config = Kconfig()
     k = config.k
     client = config.client
@@ -254,9 +252,14 @@ def deploy(paramfile):
         occmd += "| tar zxf - oc"
         occmd += "; chmod 700 oc"
         call(occmd, shell=True)
-        ocdownloaded = True
-        if not macosx and os.path.exists('/i_am_a_container'):
-            move('oc', '/workdir')
+        if os.path.exists('/i_am_a_container'):
+            if macosx:
+                occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/maxosx/oc.tar.gz"
+                occmd += "| tar zxf -C /workdir - oc"
+                occmd += "; chmod 700 /workdir/oc"
+                call(occmd, shell=True)
+            else:
+                move('oc', '/workdir/oc')
     if find_executable('openshift-install') is None:
         if version == 'nightly':
             get_installer(nightly=True)
@@ -264,7 +267,6 @@ def deploy(paramfile):
             get_upstream_installer()
         else:
             get_installer()
-        # installerdownloaded = True
         if not macosx and os.path.exists('/i_am_a_container'):
             move('openshift-install', '/workdir')
     INSTALLER_VERSION = os.popen('openshift-install version').readlines()[0].split(" ")[1].strip()
@@ -487,12 +489,6 @@ def deploy(paramfile):
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
             w.write(str(workerdata))
-    if ocdownloaded and macosx and os.path.exists('/i_am_a_container'):
-        occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/maxosx/oc.tar.gz"
-        occmd += "| tar zxf - oc"
-        occmd += "; chmod 700 oc"
-        call(occmd, shell=True)
-        move('oc', '/workdir/oc')
 
 
 if __name__ == '__main__':
