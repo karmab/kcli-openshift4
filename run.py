@@ -476,17 +476,17 @@ def deploy(paramfile):
     if workers > 0:
         call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
              shell=True)
+    pprint("Deploying certs autoapprover cronjob", color='blue')
+    call("oc create -f autoapprovercron.yml", shell=True)
     installcommand = 'openshift-install --dir=%s wait-for install-complete' % clusterdir
     installcommand = "%s | %s" % (installcommand, installcommand)
     pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
     call(installcommand, shell=True)
-    pprint("Deploying certs autoapprover cronjob", color='blue')
     if platform in virtplatforms:
         copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
             w.write(str(workerdata))
-    call("oc create -f autoapprovercron.yml", shell=True)
     if ocdownloaded and macosx and os.path.exists('/i_am_a_container'):
         occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/maxosx/oc.tar.gz"
         occmd += "| tar zxf - oc"

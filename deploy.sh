@@ -42,10 +42,7 @@ export KUBECONFIG=$PWD/$clusterdir/auth/kubeconfig
 
 which oc >/dev/null 2>&1
 if [ "$?" != "0" ]; then
- echo -e "${BLUE}Downloading oc in current directory${NC}"
- curl --silent https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/$SYSTEM/oc.tar.gz > oc.tar.gz
- tar zxf oc.tar.gz
- rm -rf oc.tar.gz
+ get_oc.sh
 fi
 
 which openshift-install >/dev/null 2>&1
@@ -234,8 +231,7 @@ fi
 if [ "$workers" -gt "0" ]; then
   oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-
 fi
-echo -e "${BLUE}Launching install-complete step. Note it will be retried one extra time in case of timeouts${NC}"
-openshift-install --dir=$clusterdir wait-for install-complete || openshift-install --dir=$clusterdir wait-for install-complete
-
 echo -e "${BLUE}Deploying certs autoapprover cronjob${NC}"
 oc create -f autoapprovercron.yml
+echo -e "${BLUE}Launching install-complete step. Note it will be retried one extra time in case of timeouts${NC}"
+openshift-install --dir=$clusterdir wait-for install-complete || openshift-install --dir=$clusterdir wait-for install-complete
