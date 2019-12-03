@@ -20,7 +20,7 @@ else
   exit 1
 fi
 
-kcli render -f env.sh --paramfile $paramfile -i | sed -i 's/\r//g' > /tmp/env.sh
+kcli render -f env.sh --paramfile $paramfile -i | sed 's/\r//g' > /tmp/env.sh
 source /tmp/env.sh
 
 if [ "$version" == "upstream" ] ; then
@@ -94,14 +94,14 @@ fi
 mkdir -p $clusterdir || true
 pub_key=`cat $pub_key`
 pull_secret=`cat $pull_secret | tr -d [:space:]`
-kcli render -f install-config.yaml -P cluster=$cluster -P domain=$domain -P masters=$masters -P workers=$workers -P pub_key="$pub_key" -P pull_secret=$pull_secret | sed -i 's/\r//g' > $clusterdir/install-config.yaml
+kcli render -f install-config.yaml -P cluster=$cluster -P domain=$domain -P masters=$masters -P workers=$workers -P pub_key="$pub_key" -P pull_secret=$pull_secret | sed 's/\r//g' > $clusterdir/install-config.yaml
 
 openshift-install --dir=$clusterdir create manifests
 cp customisation/* $clusterdir/openshift
 if [ "$workers" -gt "0" ]; then
-  kcli render -f customisation/99-ingress-controller.yaml -P replicas=$workers -P role=worker | sed -i 's/\r//g' > $clusterdir/openshift/99-ingress-controller.yaml
+  kcli render -f customisation/99-ingress-controller.yaml -P replicas=$workers -P role=worker | sed 's/\r//g' > $clusterdir/openshift/99-ingress-controller.yaml
 else
-  kcli render -f customisation/99-ingress-controller.yaml -P replicas=$masters -P role=master | sed -i 's/\r//g' > $clusterdir/openshift/99-ingress-controller.yaml
+  kcli render -f customisation/99-ingress-controller.yaml -P replicas=$masters -P role=master | sed 's/\r//g' > $clusterdir/openshift/99-ingress-controller.yaml
 fi
 openshift-install --dir=$clusterdir create ignition-configs
 
