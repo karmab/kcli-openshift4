@@ -21,13 +21,13 @@ dhcp_ip={{ dhcp_ip }}
 dhcp_netmask={{ dhcp_netmask }}
 dhcp_gateway={{ dhcp_gateway }}
 dhcp_dns={{ dhcp_dns }}
-{%- if bootstrap_helper_mac is defined and bootstrap_helper_ip is defined -%}
+{% if bootstrap_helper_mac is defined and bootstrap_helper_ip is defined -%}
 node_macs={{ [bootstrap_helper_mac] + [bootstrap_mac] + master_macs + worker_macs }}
 node_ips={{ [bootstrap_helper_ip] + [bootstrap_ip] + master_ips + worker_ips + [bootstrap_ip] }}
 node_names={{ cluster|ocpnodes(platform, masters, workers) }}
-{% elif bootstrap_helper_mac is not defined and bootstrap_helper_ip is not defined %}
+{%- elif bootstrap_helper_mac is not defined and bootstrap_helper_ip is not defined -%}
 node_macs={{ [bootstrap_mac] + master_macs + worker_macs }}
 node_ips={{ [bootstrap_ip] + master_ips + worker_ips + [bootstrap_ip] }}
 node_names={{ cluster|ocpnodes(platform, masters, workers) }}
-{%- endif %}
-{%- endif %}
+{%- endif -%}
+{%- endif -%}
