@@ -507,6 +507,8 @@ if __name__ == '__main__':
     if os.path.exists('/i_am_a_container'):
         os.environ['PATH'] = '/:/workdir:%s' % os.environ['PATH']
         paramfile = '/workdir/%s' % paramfile
+    else:
+        os.environ['PATH'] = '.:%s' % os.environ['PATH']
     if action_clean:
         clean(paramfile)
     elif action_scale:
