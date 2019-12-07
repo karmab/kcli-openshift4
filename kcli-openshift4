@@ -4,13 +4,17 @@ import argparse
 from distutils.spawn import find_executable
 from glob import glob
 import json
-from kvirt.config import Kconfig
-from kvirt.common import pprint, get_parameters
 import os
+import sys
+try:
+    from kvirt.config import Kconfig
+    from kvirt.common import pprint, get_parameters
+except:
+    print("Install kcli first")
+    os._exit(1)
 import re
 from shutil import copy2, rmtree, move
 from subprocess import call
-import sys
 from time import sleep
 import yaml
 import ssl
@@ -195,7 +199,6 @@ def deploy(paramfile):
         paramdata = yaml.safe_load(entries)
     data = {'cluster': envname,
             'helper_image': 'CentOS-7-x86_64-GenericCloud.qcow2',
-            'helper_sleep': 15,
             'domain': 'karmalabs.com',
             'network': 'default',
             'masters': 1,
@@ -213,7 +216,6 @@ def deploy(paramfile):
         pprint("Using %s version" % version, color='blue')
     cluster = data.get('cluster')
     helper_image = data.get('helper_image')
-    # helper_sleep = data.get('helper_sleep')
     image = data.get('image')
     api_ip = data.get('api_ip')
     public_api_ip = data.get('public_api_ip')
