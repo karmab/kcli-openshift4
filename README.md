@@ -20,18 +20,17 @@ The main features are:
 - Valid pull secret.
 - ssh public key.
 - Latest kcli-openshift4
-    - if you run kcli through podman/docker, use *install.sh* to install kcli-openshift4 the same way.
-    - if you're running in a packaged way, you can simply launch the kcli-openshift4 command
+    - if you're running kcli through podman/docker, use *install.sh* to install kcli-openshift4 the same way. Also make sure your user has write access to /etc/hosts file to allow editing of this file.
+    - if you're running kcli through rpm/deb, simply launch the kcli-openshift4 command.
     - If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
-- Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
 - An available ip in your vm's network to use as *api_ip*. Make sure it is excluded from your dhcp server.
+- Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
 - Target platform needs:
   - rhcos image ( *kcli download rhcos43* for instance ). the script will download latest if not present.
   - centos helper image ( *kcli download centos7* ). This is only needed on ovirt/vsphere/openstack
-- For Libvirt, support for fw_cfg in qemu (install qemu-kvm-ev on centos for instance).
-- Target platform needs ignition support (for Ovirt/Rhv, this means >= 4.3.4).
-- On Openstack, you will need to create a network with port security disabled (as we need a vip to be reachable on the masters). You will also need to create two ports on this network and map them to floating ips. Put the corresponding api_ip and public_api_ip in your parameter file. You can use [openstack.sh.sample](openstack.sh.sample) as a starting point. You also need to open relevant ports (80, 443, 6443 and 22623) in your security groups.
-- If running through kcli-openshift4 container, make sure your user has write access to /etc/hosts file to allow editing of this file
+  - Target platform needs ignition support (for Ovirt/Rhv, this means >= 4.3.4).
+  - For Libvirt, support for fw_cfg in qemu (install qemu-kvm-ev on centos for instance).
+  - On Openstack, you will need to create a network with port security disabled (as we need a vip to be reachable on the masters). You will also need to create two ports on this network and map them to floating ips. Put the corresponding api_ip and public_api_ip in your parameter file. You can use [openstack.sh.sample](openstack.sh.sample) as a starting point. You also need to open relevant ports (80, 443, 6443 and 22623) in your security groups.
 
 ## How to Use
 
@@ -67,7 +66,9 @@ First, create a parameter file similar to [*parameters.yml.sample*](parameters.y
 
 ### Deploying
 
-- `kcli-openshift4 parameters.yml`
+```
+kcli-openshift4 parameters.yml
+````
 
 - You will be asked for your sudo password in order to create a /etc/hosts entry for the api vip.
 
@@ -75,11 +76,15 @@ First, create a parameter file similar to [*parameters.yml.sample*](parameters.y
 
 ### Adding more workers
 
-- `kcli-openshift4 -w num_of_workers parameters.yml`
+```
+kcli-openshift4 -w num_of_workers parameters.yml
+```
 
 ### Cleaning up
 
-- `kcli-openshift4 -c parameters.yml`
+```
+kcli-openshift4 -c parameters.yml
+````
 
 ### Using a custom/latest openshift image
 
