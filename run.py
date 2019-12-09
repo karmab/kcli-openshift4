@@ -216,7 +216,8 @@ def deploy(paramfile):
             'pub_key': '%s/.ssh/id_rsa.pub' % os.environ['HOME'],
             'pull_secret': 'openshift_pull.json',
             'version': 'nightly',
-            'macosx': False}
+            'macosx': False,
+            'network_type': 'OpenShiftSDN'}
     data.update(paramdata)
     version = data.get('version')
     if version not in ['nightly', 'upstream']:

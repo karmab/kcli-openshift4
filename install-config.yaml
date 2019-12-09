@@ -12,7 +12,7 @@ networking:
   clusterNetworks:
   - cidr: 10.132.0.0/14
     hostPrefix: 23
-  networkType: OpenShiftSDN
+  networkType: {{ network_type }}
   serviceNetwork:
   - 172.30.0.0/16
 platform:

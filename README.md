@@ -42,27 +42,28 @@ kcli-openshift4 -t parameters.yml
 
 First, create a parameter file similar to [*parameters.yml.sample*](parameters.yml.sample) and tweak the values you want:
 
-- *version* name. You can choose between nightly, stable and upstream. Defaults to `nightly`
-- *cluster* name. Defaults to `testk`
-- *domain* name. For cloud platforms, it should point to a domain name you have access to.Defaults to `karmalabs.com`
-- *pub_key* location. Defaults to `$HOME/.ssh/id_rsa.pub`
+- *version*. You can choose between nightly, stable and upstream. Defaults to `nightly`.
+- *cluster*. Defaults to `testk`.
+- *domain*. For cloud platforms, it should point to a domain name you have access to.Defaults to `karmalabs.com`.
+- *network_type*. Defaults to `OpenShiftSDN`.
+- *pub_key* location. Defaults to `$HOME/.ssh/id_rsa.pub`.
 - *pull_secret* location. Defaults to `./openshift_pull.json`. You can omit this parameter when you set version to `upstream`
 - *image* rhcos image to use (should be qemu for libvirt/kubevirt and openstack one for ovirt/openstack).
 - *helper_image* which image to use when deploying temporary helper vms (defaults to `CentOS-7-x86_64-GenericCloud.qcow2`)
-- *masters* number of masters. Defaults to `1`
-- *workers* number of workers. Defaults to `0`
-- *network*. Defaults to `default`
-- *master_memory*. Defaults to `8192Mi`
-- *worker_memory*. Defaults to `8192Mi`
-- *bootstrap_memory*. Defaults to `4096Mi`
-- *numcpus*. Defaults to `4`
-- *disk size* default disk size for final nodes. Defaults to `30Gb`
-- *extra_disk* whether to create a secondary disk (to use with rook, for instance). Defaults to `false`
+- *masters* number of masters. Defaults to `1`.
+- *workers* number of workers. Defaults to `0`.
+- *network*. Defaults to `default`.
+- *master_memory*. Defaults to `8192Mi`.
+- *worker_memory*. Defaults to `8192Mi`.
+- *bootstrap_memory*. Defaults to `4096Mi`.
+- *numcpus*. Defaults to `4`.
+- *disk size* default disk size for final nodes. Defaults to `30Gb`.
+- *extra_disk* whether to create a secondary disk (to use with rook, for instance). Defaults to `false`.
 - *extra\_disks* array of additional disks.
 - *api_ip* the ip to use for api ip. Defaults to `None`, in which case a temporary vm will be launched to gather a free one.
 - *extra\_networks* array of additional networks.
-- *master\_macs* array of master mac addresses.
-- *worker\_macs* array of worker mac addresses.
+- *master\_macs* optional array of master mac addresses.
+- *worker\_macs* optional array of worker mac addresses.
 
 ### Deploying
 
