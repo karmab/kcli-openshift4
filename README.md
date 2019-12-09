@@ -109,4 +109,4 @@ As such, any machine config file present in this directory will be added to the 
 
 ## Architecture
 
-Check [Architecture](Architecture.md)
+Check [Architecture](ARCHITECTURE.md)
