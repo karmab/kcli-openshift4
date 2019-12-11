@@ -143,12 +143,12 @@ parameters:
   - path: /etc/kubernetes/apps.db
     origin: apps.db
 {% if numa != None %}
-    numa: {{ numa }}
+ numa: {{ numa }}
 {% endif %}
 {% if numamode != None %}
-    numamode: {{ numamode }}
+ numamode: {{ numamode }}
 {% endif %}
 {% if cpupinning != None %}
-    cpupinning: {{ cpupinning }}
+ cpupinning: {{ cpupinning }}
 {% endif %}
 {% endfor %}
