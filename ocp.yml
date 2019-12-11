@@ -23,6 +23,9 @@ parameters:
  worker_ips: []
  bootstrap_mac: 
  bootstrap_ip: 
+ numa:
+ numamode:
+ cpupinning:
 
 {%- if not scale %}
 
@@ -139,4 +142,13 @@ parameters:
     origin: config.hcl.templ
   - path: /etc/kubernetes/apps.db
     origin: apps.db
+{% if numa != None %}
+    numa: {{ numa }}
+{% endif %}
+{% if numamode != None %}
+    numamode: {{ numamode }}
+{% endif %}
+{% if cpupinning != None %}
+    cpupinning: {{ cpupinning }}
+{% endif %}
 {% endfor %}
