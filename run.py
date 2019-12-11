@@ -487,7 +487,7 @@ def deploy(paramfile):
         for vm in todelete:
             pprint("Deleting %s" % vm)
             k.delete(vm)
-    if workers > 0:
+    if workers == 0:
         call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
              shell=True)
     pprint("Deploying certs autoapprover cronjob", color='blue')
