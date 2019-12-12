@@ -26,6 +26,7 @@ parameters:
  numa:
  numamode:
  cpupinning:
+ pcidevices:
 
 {%- if not scale %}
 
@@ -150,5 +151,8 @@ parameters:
 {% endif %}
 {% if cpupinning != None %}
  cpupinning: {{ cpupinning }}
+{% endif %}
+{% if pcidevices != None and num == 0 %}
+ pcidevices: {{ pcidevices }}
 {% endif %}
 {% endfor %}

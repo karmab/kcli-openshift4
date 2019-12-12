@@ -64,6 +64,10 @@ First, create a parameter file similar to [*parameters.yml.sample*](parameters.y
 - *extra\_networks* array of additional networks.
 - *master\_macs* optional array of master mac addresses.
 - *worker\_macs* optional array of worker mac addresses.
+- *numa* optional numa conf dictionary to apply to the workers only. Check [here](https://github.com/karmab/kcli-plans/blob/master/samples/cputuning/numa.yml) for an example.
+- *numamode* optional numamode to apply to the workers only.
+- *cpupinning* optional cpupinning conf to apply to the workers only.
+- *pcidevices* optional array of pcidevices to passthrough to the first worker only. Check [here](https://github.com/karmab/kcli-plans/blob/master/samples/pcipassthrough/pci.yml) for an example.
 
 ### Deploying
 
