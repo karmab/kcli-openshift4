@@ -12,3 +12,4 @@ domain: karmalabs.com
 masters: 1
 workers: 0
 api_ip: 192.168.122.253
+network_type: OpenShiftSDN

@@ -16,7 +16,16 @@ networking:
   serviceNetwork:
   - 172.30.0.0/16
 platform:
+{%- if config_type == 'vsphere' %}
+  vsphere:
+    vcenter: {{ config_host }}
+    username: {{ config_user }}
+    password: {{ config_password }}
+    datacenter: {{ config_datacenter }}
+    defaultDatastore: {{ config_pool }}
+{%- else %}
   none: {}
+{%- endif %}
 pullSecret: '{{ pull_secret }}'
 sshKey: |
   {{ pub_key }}
