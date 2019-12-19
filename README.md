@@ -72,7 +72,7 @@ First, create a parameter file similar to [*parameters.yml.sample*](parameters.y
 ### Deploying
 
 ```
-kcli-openshift4 parameters.yml
+kcli-openshift4 create parameters.yml
 ````
 
 - You will be asked for your sudo password in order to create a /etc/hosts entry for the api vip.
@@ -82,29 +82,24 @@ kcli-openshift4 parameters.yml
 ### Adding more workers
 
 ```
-kcli-openshift4 -w num_of_workers parameters.yml
+kcli-openshift4 scale -w num_of_workers parameters.yml
 ```
 
 ### Cleaning up
 
 ```
-kcli-openshift4 -c parameters.yml
+kcli-openshift4 delete parameters.yml
 ````
 
-### Using a custom/latest openshift image
-
-You can use the script *get_ci_installer.sh* or the following lines:
+### Getting openshift-install binary beforehands
 
 ```
-if [ ! -f openshift-install ] ; then
-export PULL_SECRET="openshift_pull.json"
-export VERSION=$(curl -s 'https://openshift-release.svc.ci.openshift.org/graph?format=dot' | grep tag | sed 's/.*label="\(.*.\)", shape=.*/\1/' | sort | tail -1)
-export OPENSHIFT_RELEASE_IMAGE=registry.svc.ci.openshift.org/ocp/release:$VERSION
-oc adm release extract --registry-config $PULL_SECRET --command=openshift-install --to . $OPENSHIFT_RELEASE_IMAGE
-fi
-```
+kcli-openshift4 download
+````
 
-There are other get_* scripts provided for retrieving a downstream nightly build of the installer or latest upstream
+By default, it will download the stable openshift-install in your current directory, but you can also specify a version (either stable,nightly or upstream).
+
+There is also a tag flag you can use to get a specific image from registry.svc.ci registry, for which you will need to provide a valid pull secret.
 
 ### Providing custom machine configs
 

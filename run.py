@@ -79,6 +79,18 @@ def get_installer(nightly=False, macosx=False):
     call(cmd, shell=True)
 
 
+def get_ci_installer(tag, pull_secret, macosx=False):
+    if '/' not in tag:
+        pprint("Prepending registry.svc.ci.openshift.org/ocp/release: to your tag", color='blue')
+        tag = 'registry.svc.ci.openshift.org/ocp/release:%s' % tag
+    os.environ['OPENSHIFT_RELEASE_IMAGE'] = tag
+    msg = 'Downloading openshift-install from registry.svc.ci in current directory'
+    pprint(msg, color='blue')
+    cmd = "oc adm release extract --registry-config %s --command=openshift-install --to . %s" % (pull_secret, tag)
+    cmd += "; chmod 700 openshift-install"
+    call(cmd, shell=True)
+
+
 def get_upstream_installer(macosx=False):
     INSTALLSYSTEM = 'mac' if os.path.exists('/Users') or macosx else 'linux'
     msg = 'Downloading okd openshift-install from github in current directory'
@@ -139,7 +151,46 @@ def gather_dhcp(data, platform):
         return {'node_names': node_names, 'node_macs': node_macs, 'node_ips': node_ips, 'nodes': nodes}
 
 
-def template(paramfile):
+def download(args):
+    macosx = args.macosx
+    tag = args.tag
+    version = args.version
+    pull_secret = args.pull_secret if not os.path.exists('/i_am_a_container') else '/workdir/%s' % args.pull_secret
+    if find_executable('oc') is None:
+        SYSTEM = 'macosx' if os.path.exists('/Users') else 'linux'
+        pprint("Downloading oc in current directory", color='blue')
+        occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/%s/oc.tar.gz" % SYSTEM
+        occmd += "| tar zxf - oc"
+        occmd += "; chmod 700 oc"
+        call(occmd, shell=True)
+        if os.path.exists('/i_am_a_container'):
+            if macosx:
+                occmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/maxosx/oc.tar.gz"
+                occmd += "| tar zxf -C /workdir - oc"
+                occmd += "; chmod 700 /workdir/oc"
+                call(occmd, shell=True)
+            else:
+                move('oc', '/workdir/oc')
+    if find_executable('openshift-install') is None:
+        if tag is not None:
+            if not os.path.exists(pull_secret):
+                pprint("Missing pull secret %s" % pull_secret, color='red')
+                os._exit(1)
+            get_ci_installer(tag, pull_secret)
+        elif version == 'nightly':
+            get_installer(nightly=True)
+        elif version == 'upstream':
+            get_upstream_installer()
+        else:
+            get_installer()
+        if not macosx and os.path.exists('/i_am_a_container'):
+            move('openshift-install', '/workdir')
+    else:
+        pprint("Skipping openshift-install as it's already present in your path", color='blue')
+
+
+def template(args):
+    paramfile = args.paramfile if not os.path.exists('/i_am_a_container') else '/workdir/%s' % args.paramfile
     pprint("Generating parameter file %s" % real_path(paramfile), color='green')
     params = get_parameters('ocp.yml')
     parameters = '\n'.join([parameter.lstrip() for parameter in params.split('\n')[1:]])
@@ -150,7 +201,9 @@ def template(paramfile):
         f.write("macosx: False\n")
 
 
-def scale(paramfile, workers):
+def scale(args):
+    paramfile = args.paramfile if not os.path.exists('/i_am_a_container') else '/workdir/%s' % args.paramfile
+    workers = args.workers
     config = Kconfig()
     client = config.client
     platform = config.type
@@ -177,7 +230,8 @@ def scale(paramfile, workers):
         config.plan(cluster, inputfile='ocp_cloud.yml', overrides=paramdata)
 
 
-def clean(paramfile):
+def delete(args):
+    paramfile = args.paramfile if not os.path.exists('/i_am_a_container') else '/workdir/%s' % args.paramfile
     config = Kconfig()
     client = config.client
     pprint("Cleaning on client %s" % client, color='blue')
@@ -194,7 +248,8 @@ def clean(paramfile):
         rmtree(clusterdir)
 
 
-def deploy(paramfile):
+def create(args):
+    paramfile = args.paramfile if not os.path.exists('/i_am_a_container') else '/workdir/%s' % args.paramfile
     config = Kconfig()
     k = config.k
     client = config.client
@@ -504,28 +559,55 @@ def deploy(paramfile):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Openshift deployer leveraring kcli library')
-    parser.add_argument('-c', '--clean', help='Clean', action='store_true')
-    parser.add_argument('-s', '--scale', help='Scale', action='store_true')
-    parser.add_argument('-t', '--template', help='Template', action='store_true')
-    parser.add_argument('-w', '--workers', help='Total number of workers (used when scaling)', type=int)
-    parser.add_argument('paramfile', help='Parameter file')
-    args = parser.parse_args()
-    workers = args.workers
-    action_scale = args.scale
-    action_clean = args.clean
-    action_template = args.template
-    paramfile = args.paramfile
     if os.path.exists('/i_am_a_container'):
         os.environ['PATH'] = '/:/workdir:%s' % os.environ['PATH']
-        paramfile = '/workdir/%s' % paramfile
     else:
         os.environ['PATH'] = '.:%s' % os.environ['PATH']
-    if action_clean:
-        clean(paramfile)
-    elif action_scale:
-        scale(paramfile, workers)
-    elif action_template:
-        template(paramfile)
-    else:
-        deploy(paramfile)
+    parser = argparse.ArgumentParser(description='Openshift deployer leveraring kcli library')
+    subparsers = parser.add_subparsers(metavar='', title='Available Commands')
+
+    create_desc = 'Create a new cluster'
+    create_epilog = None
+    create_parser = argparse.ArgumentParser(add_help=False)
+    create_parser.add_argument('paramfile', metavar='PARAMFILE')
+    create_parser.set_defaults(func=create)
+    subparsers.add_parser('create', parents=[create_parser], description=create_desc,
+                          help=create_desc, epilog=create_epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+    delete_desc = 'Delete an existing cluster'
+    delete_epilog = None
+    delete_parser = argparse.ArgumentParser(add_help=False)
+    delete_parser.add_argument('paramfile', metavar='PARAMFILE')
+    delete_parser.set_defaults(func=delete)
+    subparsers.add_parser('delete', parents=[delete_parser], description=delete_desc,
+                          help=delete_desc, epilog=delete_epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+    download_desc = 'Download installer'
+    download_epilog = None
+    download_parser = argparse.ArgumentParser(add_help=False)
+    download_parser.add_argument('-m', '--macosx', action='store_true', help='enable macosx support in container mode')
+    download_parser.add_argument('-p', '--pull_secret', help='Pull secret to use for ci downloads', type=str,
+                                 default="openshift_pull.json")
+    download_parser.add_argument('-t', '--tag', help='Use specific tag', type=str)
+    download_parser.add_argument('-v', '--version', choices=['stable', 'nightly', 'upstream'], default='stable',
+                                 help='Version to get')
+    download_parser.set_defaults(func=download)
+    subparsers.add_parser('download', parents=[download_parser], description=download_desc,
+                          help=download_desc, epilog=download_epilog,
+                          formatter_class=argparse.RawDescriptionHelpFormatter)
+    scale_desc = 'Scale workers of an existing cluster'
+    scale_epilog = None
+    scale_parser = argparse.ArgumentParser(add_help=False)
+    scale_parser.add_argument('-w', '--workers', help='Total number of workers', type=int)
+    scale_parser.add_argument('paramfile', metavar='PARAMFILE')
+    scale_parser.set_defaults(func=scale)
+    subparsers.add_parser('scale', parents=[scale_parser], description=scale_desc,
+                          help=scale_desc, epilog=scale_epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+    template_desc = 'Template'
+    template_epilog = None
+    template_parser = argparse.ArgumentParser(add_help=False)
+    template_parser.add_argument('paramfile', metavar='PARAMFILE')
+    template_parser.set_defaults(func=template)
+    subparsers.add_parser('template', parents=[template_parser], description=template_desc,
+                          help=template_desc, epilog=template_epilog,
+                          formatter_class=argparse.RawDescriptionHelpFormatter)
+    args = parser.parse_args()
+    args.func(args)
