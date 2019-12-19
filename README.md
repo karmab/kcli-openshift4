@@ -19,10 +19,8 @@ The main features are:
 
 - Valid pull secret.
 - ssh public key.
-- Latest kcli-openshift4
-    - if you're running kcli through podman/docker, use *install.sh* to install kcli-openshift4 the same way. Also make sure your user has write access to /etc/hosts file to allow editing of this file.
-    - if you're running kcli through rpm/deb, simply launch the kcli-openshift4 command.
-    - If you want to target something else that your local hypervisor, you will need to configure ~/.kcli/config.yml following https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics
+- Write access to /etc/hosts file to allow editing of this file.
+- If targetting anything else than your local hypervisor, *~/.kcli/config.yml* properly configured (check https://kcli.readthedocs.io/en/master/#configuration and https://kcli.readthedocs.io/en/master/#provider-specifics)
 - An available ip in your vm's network to use as *api_ip*. Make sure it is excluded from your dhcp server.
 - Direct access to the deployed vms. Use something like this otherwise `sshuttle -r your_hypervisor 192.168.122.0/24 -v`).
 - Target platform needs:
@@ -34,13 +32,21 @@ The main features are:
 
 ## How to Use
 
+### Container Install
+
+```
+curl https://raw.githubusercontent.com/karmab/kcli-openshift4/master/install.sh | sh
+```
+
+If you run kcli from rpm/deb/pip, simply clone this repo and run the kcli-openshift4 script from there.
+
 ### Create a parameters.yml
 
 ```
-kcli-openshift4 -t parameters.yml
+kcli-openshift4 template parameters.yml
 ```
 
-First, create a parameter file similar to [*parameters.yml.sample*](parameters.yml.sample) and tweak the values you want:
+Tweak the resulting parameter file with the folloving variables:
 
 - *version*. You can choose between nightly, stable and upstream. Defaults to `nightly`.
 - *cluster*. Defaults to `testk`.
