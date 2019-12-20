@@ -197,6 +197,7 @@ def template(args):
     path = paramfile
     with open(path, 'w') as f:
         f.write("version: stable\n")
+        f.write("pull_secret: openshift_pull.json\n")
         f.write(parameters)
         f.write("macosx: False\n")
 
