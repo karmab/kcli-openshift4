@@ -363,7 +363,7 @@ def create(args):
                                         download=True, update_profile=False)
             if result['result'] != 'success':
                 os._exit(1)
-            images = [v for v in k.volumes() if image.startswith("%s%s" % (COS_TYPE, COS_VERSION))]
+            images = [v for v in k.volumes() if image.startswith("%s-%s" % (COS_TYPE, COS_VERSION))]
             image = images[0]
         pprint("Using image %s" % image, color='blue')
     else:
