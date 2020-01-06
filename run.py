@@ -58,8 +58,9 @@ def get_values(data, element, field):
     return results
 
 
-def get_installer(nightly=False, macosx=False):
+def get_installer(nightly=False, macosx=False, tag=None):
     repo = 'ocp-dev-preview' if nightly else 'ocp'
+    latest = 'latest' if tag is None else 'latest-%s' % tag
     INSTALLSYSTEM = 'mac' if os.path.exists('/Users') or macosx else 'linux'
     msg = 'Downloading openshift-install from https://mirror.openshift.com/pub/openshift-v4/clients/%s' % repo
     pprint(msg, color='blue')
@@ -72,7 +73,7 @@ def get_installer(nightly=False, macosx=False):
     if version is None:
         pprint("Coudldn't find version", color='red')
         os._exit(1)
-    cmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/%s/latest/" % repo
+    cmd = "curl -s https://mirror.openshift.com/pub/openshift-v4/clients/%s/%s/" % (repo, latest)
     cmd += "openshift-install-%s-%s.tar.gz " % (INSTALLSYSTEM, version)
     cmd += "| tar zxf - openshift-install"
     cmd += "; chmod 700 openshift-install"
@@ -173,10 +174,13 @@ def download(args):
                 move('oc', '/workdir/oc')
     if find_executable('openshift-install') is None:
         if tag is not None:
-            if not os.path.exists(pull_secret):
-                pprint("Missing pull secret %s" % pull_secret, color='red')
-                os._exit(1)
-            get_ci_installer(tag, pull_secret)
+            if len(tag) == 3 and tag.startswith('4.'):
+                get_installer(nightly=True, tag=tag)
+            else:
+                if not os.path.exists(pull_secret):
+                    pprint("Missing pull secret %s" % pull_secret, color='red')
+                    os._exit(1)
+                get_ci_installer(tag, pull_secret)
         elif version == 'nightly':
             get_installer(nightly=True)
         elif version == 'upstream':
@@ -613,5 +617,8 @@ if __name__ == '__main__':
     subparsers.add_parser('template', parents=[template_parser], description=template_desc,
                           help=template_desc, epilog=template_epilog,
                           formatter_class=argparse.RawDescriptionHelpFormatter)
+    if len(sys.argv) == 1:
+        parser.print_help()
+        os._exit(0)
     args = parser.parse_args()
     args.func(args)
