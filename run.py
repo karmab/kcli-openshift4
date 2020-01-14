@@ -564,6 +564,13 @@ def create(args):
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
             w.write(str(workerdata))
+    extrasdir = pwd_path("extras")
+    if os.path.exists(extrasdir):
+        pprint("Deploying extras", color='blue')
+        os.chdir(extrasdir)
+        for entry in sorted(os.listdir('.')):
+            if os.path.isfile(entry) and entry.endswith('sh'):
+                call("bash %s" % entry, shell=True)
 
 
 if __name__ == '__main__':
