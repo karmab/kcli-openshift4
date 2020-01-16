@@ -12,7 +12,7 @@ networking:
   clusterNetworks:
   - cidr: 10.132.0.0/14
     hostPrefix: 23
-  networkType: {{ network_type }}
+  networkType: {{ network_type | default('OpenShiftSDN') }}
   serviceNetwork:
   - 172.30.0.0/16
 platform:
@@ -25,6 +25,10 @@ platform:
     defaultDatastore: {{ config_pool }}
 {%- else %}
   none: {}
+{%- endif %}
+{%- if ca is defined %}
+additionalTrustBundle: |
+ {{ ca | replace('\n', '\n ') }}
 {%- endif %}
 pullSecret: '{{ pull_secret }}'
 sshKey: |

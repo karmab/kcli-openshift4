@@ -28,6 +28,15 @@ virtplatforms = ['kvm', 'kubevirt', 'ovirt', 'openstack', 'vsphere']
 cloudplatforms = ['aws', 'gcp']
 
 
+def valid_tag(tag):
+    if '/' in tag:
+        tag = tag.split('/')[1]
+    if len(tag) != 3 or not tag.startswith('4.'):
+        msg = "Tag should have a format of 4.X"
+        raise argparse.ArgumentTypeError(msg)
+    return tag
+
+
 def gen_mac():
     mac = [0x00, 0x16, 0x3e, randint(0x00, 0x7f), randint(0x00, 0xff), randint(0x00, 0xff)]
     return ':'.join(map(lambda x: "%02x" % x, mac))
@@ -80,12 +89,20 @@ def get_installer(nightly=False, macosx=False, tag=None):
     call(cmd, shell=True)
 
 
-def get_ci_installer(tag, pull_secret, macosx=False):
+def get_ci_installer(pull_secret, tag=None, macosx=False):
+    if tag is None:
+        tags = []
+        r = urlopen("https://openshift-release.svc.ci.openshift.org/graph?format=dot").readlines()
+        for line in r:
+            tag_match = re.match('.*label="(.*.)", shape=.*', str(line))
+            if tag_match is not None:
+                tags.append(tag_match.group(1))
+        tag = sorted(tags)[-1]
     if '/' not in tag:
         pprint("Prepending registry.svc.ci.openshift.org/ocp/release: to your tag", color='blue')
         tag = 'registry.svc.ci.openshift.org/ocp/release:%s' % tag
     os.environ['OPENSHIFT_RELEASE_IMAGE'] = tag
-    msg = 'Downloading openshift-install from registry.svc.ci in current directory'
+    msg = 'Downloading openshift-install %s in current directory' % tag
     pprint(msg, color='blue')
     cmd = "oc adm release extract --registry-config %s --command=openshift-install --to . %s" % (pull_secret, tag)
     cmd += "; chmod 700 openshift-install"
@@ -173,16 +190,13 @@ def download(args):
             else:
                 move('oc', '/workdir/oc')
     if find_executable('openshift-install') is None:
-        if tag is not None:
-            if len(tag) == 3 and tag.startswith('4.'):
-                get_installer(nightly=True, tag=tag)
-            else:
-                if not os.path.exists(pull_secret):
-                    pprint("Missing pull secret %s" % pull_secret, color='red')
-                    os._exit(1)
-                get_ci_installer(tag, pull_secret)
+        if version == 'ci':
+            if not os.path.exists(pull_secret):
+                pprint("Missing pull secret %s" % pull_secret, color='red')
+                os._exit(1)
+            get_ci_installer(pull_secret, tag=tag)
         elif version == 'nightly':
-            get_installer(nightly=True)
+            get_installer(nightly=True, tag=tag)
         elif version == 'upstream':
             get_upstream_installer()
         else:
@@ -601,8 +615,8 @@ if __name__ == '__main__':
     download_parser.add_argument('-m', '--macosx', action='store_true', help='enable macosx support in container mode')
     download_parser.add_argument('-p', '--pull_secret', help='Pull secret to use for ci downloads', type=str,
                                  default="openshift_pull.json")
-    download_parser.add_argument('-t', '--tag', help='Use specific tag', type=str)
-    download_parser.add_argument('-v', '--version', choices=['stable', 'nightly', 'upstream'], default='stable',
+    download_parser.add_argument('-t', '--tag', help='Use specific tag', type=valid_tag)
+    download_parser.add_argument('-v', '--version', choices=['ci', 'stable', 'nightly', 'upstream'], default='stable',
                                  help='Version to get')
     download_parser.set_defaults(func=download)
     subparsers.add_parser('download', parents=[download_parser], description=download_desc,

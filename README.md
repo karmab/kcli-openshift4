@@ -48,7 +48,7 @@ kcli-openshift4 template parameters.yml
 
 Tweak the resulting parameter file with the folloving variables:
 
-- *version*. You can choose between nightly, stable and upstream. Defaults to `nightly`.
+- *version*. You can choose between nightly, ci, stable and upstream. Defaults to `nightly`. ci requires specific data in your secret
 - *cluster*. Defaults to `testk`.
 - *domain*. For cloud platforms, it should point to a domain name you have access to.Defaults to `karmalabs.com`.
 - *network_type*. Defaults to `OpenShiftSDN`.
@@ -74,6 +74,7 @@ Tweak the resulting parameter file with the folloving variables:
 - *numamode* optional numamode to apply to the workers only.
 - *cpupinning* optional cpupinning conf to apply to the workers only.
 - *pcidevices* optional array of pcidevices to passthrough to the first worker only. Check [here](https://github.com/karmab/kcli-plans/blob/master/samples/pcipassthrough/pci.yml) for an example.
+- *ca* optional string of certificates to trust
 
 ### Deploying
 
