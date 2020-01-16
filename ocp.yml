@@ -27,6 +27,11 @@ parameters:
  numamode:
  cpupinning:
  pcidevices:
+ baremetal_interface: eth1
+ baremetal_net: default
+ baremetal_ip: 172.22.0.3
+ baremetal_cidr: 24
+ baremetal_range: 172.22.0.10,172.22.0.100
 
 {%- if not scale %}
 

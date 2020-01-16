@@ -89,7 +89,7 @@ def get_installer(nightly=False, macosx=False, tag=None):
     call(cmd, shell=True)
 
 
-def get_ci_installer(pull_secret, tag=None, macosx=False):
+def get_ci_installer(pull_secret, tag=None, macosx=False, baremetal=False):
     if tag is None:
         tags = []
         r = urlopen("https://openshift-release.svc.ci.openshift.org/graph?format=dot").readlines()
@@ -98,15 +98,18 @@ def get_ci_installer(pull_secret, tag=None, macosx=False):
             if tag_match is not None:
                 tags.append(tag_match.group(1))
         tag = sorted(tags)[-1]
-    if '/' not in tag:
+    if '/' not in str(tag):
         pprint("Prepending registry.svc.ci.openshift.org/ocp/release: to your tag", color='blue')
         tag = 'registry.svc.ci.openshift.org/ocp/release:%s' % tag
     os.environ['OPENSHIFT_RELEASE_IMAGE'] = tag
     msg = 'Downloading openshift-install %s in current directory' % tag
     pprint(msg, color='blue')
-    cmd = "oc adm release extract --registry-config %s --command=openshift-install --to . %s" % (pull_secret, tag)
+    binary = 'openshift-baremetal-install' if baremetal else 'openshift-install'
+    cmd = "oc adm release extract --registry-config %s --command=%s --to . %s" % (pull_secret, binary, tag)
     cmd += "; chmod 700 openshift-install"
     call(cmd, shell=True)
+    if baremetal and os.path.exists('openshift-baremetal-install'):
+        os.rename('openshift-baremetal-install', 'openshift-install')
 
 
 def get_upstream_installer(macosx=False):
@@ -173,6 +176,7 @@ def download(args):
     macosx = args.macosx
     tag = args.tag
     version = args.version
+    baremetal = args.baremetal
     pull_secret = args.pull_secret if not os.path.exists('/i_am_a_container') else '/workdir/%s' % args.pull_secret
     if find_executable('oc') is None:
         SYSTEM = 'macosx' if os.path.exists('/Users') else 'linux'
@@ -194,7 +198,7 @@ def download(args):
             if not os.path.exists(pull_secret):
                 pprint("Missing pull secret %s" % pull_secret, color='red')
                 os._exit(1)
-            get_ci_installer(pull_secret, tag=tag)
+            get_ci_installer(pull_secret, tag=tag, baremetal=baremetal)
         elif version == 'nightly':
             get_installer(nightly=True, tag=tag)
         elif version == 'upstream':
@@ -291,10 +295,11 @@ def create(args):
             'pull_secret': 'openshift_pull.json',
             'version': 'nightly',
             'macosx': False,
+            'baremetal': False,
             'network_type': 'OpenShiftSDN'}
     data.update(paramdata)
     version = data.get('version')
-    if version not in ['nightly', 'upstream']:
+    if version not in ['ci', 'nightly', 'upstream']:
         pprint("Using stable version", color='blue')
     else:
         pprint("Using %s version" % version, color='blue')
@@ -312,6 +317,7 @@ def create(args):
     pub_key = data.get('pub_key')
     pull_secret = pwd_path(data.get('pull_secret')) if version != 'upstream' else pwd_path('fake_pull.json')
     macosx = data.get('macosx')
+    baremetal = data.get('baremetal')
     if macosx and not os.path.exists('/i_am_a_container'):
         macosx = False
     if platform == 'openstack' and (api_ip is None or public_api_ip is None):
@@ -347,7 +353,9 @@ def create(args):
             else:
                 move('oc', '/workdir/oc')
     if find_executable('openshift-install') is None:
-        if version == 'nightly':
+        if version == 'ci':
+            get_ci_installer(pull_secret, tag=tag, baremetal=baremetal)
+        elif version == 'nightly':
             get_installer(nightly=True)
         elif version == 'upstream':
             get_upstream_installer()
@@ -404,6 +412,10 @@ def create(args):
                 f.write(installconfig)
         else:
             copy2(f, "%s/openshift" % clusterdir)
+    if baremetal:
+        metal3config = config.process_inputfile(cluster, "metal3-config.yaml", overrides=data)
+        with open("%s/metal3-config.yaml" % clusterdir, 'w') as f:
+            f.write(metal3config)
     call('openshift-install --dir=%s create ignition-configs' % clusterdir, shell=True)
     staticdata = gather_dhcp(data, platform)
     if staticdata:
@@ -612,6 +624,7 @@ if __name__ == '__main__':
     download_desc = 'Download installer'
     download_epilog = None
     download_parser = argparse.ArgumentParser(add_help=False)
+    download_parser.add_argument('-b', '--baremetal', action='store_true', help='retrieve baremetal installer')
     download_parser.add_argument('-m', '--macosx', action='store_true', help='enable macosx support in container mode')
     download_parser.add_argument('-p', '--pull_secret', help='Pull secret to use for ci downloads', type=str,
                                  default="openshift_pull.json")

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metal3-config
+  namespace: openshift-machine-api
+data:
+  cache_url:
+  deploy_kernel_url: http://{{ baremetal_ip }}:6180/images/ironic-python-agent.kernel
+  deploy_ramdisk_url: http://{{ baremetal_ip }}:6180/images/ironic-python-agent.initramfs
+  dhcp_range: {{ baremetal_range }}
+  http_port: "6180"
+  ironic_endpoint: http://{{ baremetal_ip }}:6385/v1/
+  ironic_inspector_endpoint: http://{{ baremetal_ip }}:5050/v1/
+  provisioning_interface: {{ baremetal_interface }}
+  provisioning_ip: {{ baremetal_ip }}/{{ baremetal_cidr }}

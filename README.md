@@ -75,6 +75,7 @@ Tweak the resulting parameter file with the folloving variables:
 - *cpupinning* optional cpupinning conf to apply to the workers only.
 - *pcidevices* optional array of pcidevices to passthrough to the first worker only. Check [here](https://github.com/karmab/kcli-plans/blob/master/samples/pcipassthrough/pci.yml) for an example.
 - *ca* optional string of certificates to trust
+- *baremetal* Whether to use openshift-baremetal-deploy (and as such, deploy baremetal operator deployed during the install)
 
 ### Deploying
 
