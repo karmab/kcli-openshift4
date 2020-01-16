@@ -99,14 +99,13 @@ def get_ci_installer(pull_secret, tag=None, macosx=False, baremetal=False):
                 tags.append(tag_match.group(1))
         tag = sorted(tags)[-1]
     if '/' not in str(tag):
-        pprint("Prepending registry.svc.ci.openshift.org/ocp/release: to your tag", color='blue')
         tag = 'registry.svc.ci.openshift.org/ocp/release:%s' % tag
     os.environ['OPENSHIFT_RELEASE_IMAGE'] = tag
     binary = 'openshift-baremetal-install' if baremetal else 'openshift-install'
     msg = 'Downloading %s %s in current directory' % (binary, tag)
     pprint(msg, color='blue')
     cmd = "oc adm release extract --registry-config %s --command=%s --to . %s" % (pull_secret, binary, tag)
-    cmd += "; chmod 700 openshift-install"
+    cmd += "; chmod 700 %s" % binary
     call(cmd, shell=True)
     if baremetal and os.path.exists('openshift-baremetal-install'):
         msg = "Renaming openshift-baremetal-install as openshift-install"
@@ -416,6 +415,7 @@ def create(args):
             copy2(f, "%s/openshift" % clusterdir)
     if baremetal:
         metal3config = config.process_inputfile(cluster, "metal3-config.yaml", overrides=data)
+        pprint("Rendering metal3 config map", color='blue')
         with open("%s/openshift/metal3-config.yaml" % clusterdir, 'w') as f:
             f.write(metal3config)
     call('openshift-install --dir=%s create ignition-configs' % clusterdir, shell=True)

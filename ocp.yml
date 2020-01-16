@@ -27,6 +27,7 @@ parameters:
  numamode:
  cpupinning:
  pcidevices:
+ baremetal: false
  baremetal_interface: eth1
  baremetal_net: default
  baremetal_ip: 172.22.0.3
