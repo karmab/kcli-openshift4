@@ -32,6 +32,9 @@ spec:
         NETMASK=$(ip -o -f inet addr show | awk '/scope global/ {print $4}' | head -1 | cut -d'/' -f2)
         if [ "$NETMASK" != "" ] ; then
           sed -i "s@{{ api_ip }}@{{ api_ip }}/$NETMASK@" /etc/keepalived/keepalived.conf
+          {% if ingress_ip is defined %}
+          sed -i "s@{{ ingress_ip }}@{{ ingress_ip }}/$NETMASK@" /etc/keepalived/keepalived.conf
+          {% endif %}
         fi
       fi
     resources: {}

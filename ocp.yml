@@ -15,6 +15,7 @@ parameters:
  autostart: false
  keys: []
  api_ip: 
+ ingress_ip: 
  extra_disks: []
  extra_networks: []
  master_macs: []

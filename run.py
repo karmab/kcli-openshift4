@@ -308,6 +308,9 @@ def create(args):
     helper_image = data.get('helper_image')
     image = data.get('image')
     api_ip = data.get('api_ip')
+    ingress_ip = data.get('ingress_ip')
+    if ingress_ip is None:
+        ingress_ip = api_ip
     public_api_ip = data.get('public_api_ip')
     bootstrap_api_ip = data.get('bootstrap_api_ip')
     domain = data.get('domain')
@@ -429,8 +432,8 @@ def create(args):
         if api_ip is None:
             pprint("You need to define api_ip in your parameters file", color='red')
             os._exit(1)
-        host_ip = api_ip if platform != "openstack" else public_api_ip
-        pprint("Using %s for api vip...." % host_ip, color='blue')
+        host_ip = ingress_ip if platform != "openstack" else public_api_ip
+        pprint("Using %s for api vip...." % api_ip, color='blue')
         if not os.path.exists("/i_am_a_container"):
             hosts = open("/etc/hosts").readlines()
             wronglines = [e for e in hosts if not e.startswith('#') and "api.%s.%s" % (cluster, domain) in e and
@@ -452,20 +455,20 @@ def create(args):
                     os.mkdir('/etc/resolver')
                 if not os.path.exists('/etc/resolver/%s.%s' % (cluster, domain)):
                     pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
-                    call("sudo sh -c 'echo nameserver %s > /etc/resolver/%s.%s'" % (api_ip, cluster, domain),
+                    call("sudo sh -c 'echo nameserver %s > /etc/resolver/%s.%s'" % (ingress_ip, cluster, domain),
                          shell=True)
                 else:
                     resolverlines = open("/etc/resolver/%s.%s" % (cluster, domain)).readlines()
                     correct = [e for e in resolverlines if api_ip not in e]
                     if not correct:
                         pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
-                        call("sudo sh -c 'echo nameserver %s > /etc/resolver/%s.%s'" % (api_ip, cluster, domain),
+                        call("sudo sh -c 'echo nameserver %s > /etc/resolver/%s.%s'" % (ingress_ip, cluster, domain),
                              shell=True)
             elif not os.path.exists("/etc/NetworkManager/dnsmasq.d/%s.%s.conf" % (cluster, domain)):
                 pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
                 nm = "sudo sh -c '"
                 nm += "echo server=/apps.%s.%s/%s > /etc/NetworkManager/dnsmasq.d/%s.%s.conf'" % (cluster, domain,
-                                                                                                  api_ip, cluster,
+                                                                                                  ingress_ip, cluster,
                                                                                                   domain)
                 nm += ";sudo systemctl reload NetworkManager"
                 call(nm, shell=True)
@@ -476,8 +479,8 @@ def create(args):
                     pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
                     nm = "sudo sh -c '"
                     nm += "echo server=/apps.%s.%s/%s > /etc/NetworkManager/dnsmasq.d/%s.%s.conf'" % (cluster, domain,
-                                                                                                      api_ip, cluster,
-                                                                                                      domain)
+                                                                                                      ingress_ip,
+                                                                                                      cluster, domain)
                     nm += ";sudo systemctl reload NetworkManager"
                     call(nm, shell=True)
         else:
