@@ -5,7 +5,7 @@ parameters:
  deploy_bootstrap: true
  bootstrap_memory: 4096
  disk_size: 30
- image: rhcos-420.8.20190611.0-qemu.qcow2
+ image: rhcos44
  cluster: testk
  domain: karmalabs.com
  masters: 1

@@ -576,7 +576,7 @@ def create(args):
         call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
              shell=True)
     elif platform in virtplatforms:
-        copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
+        # copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
             w.write(str(workerdata))

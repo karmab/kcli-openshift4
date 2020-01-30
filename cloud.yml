@@ -7,7 +7,7 @@ parameters:
  worker_memory: 8192
  bootstrap_memory: 4096
  disk_size: 30
- image: rhcos-410.8.20190520.1-openstack.qcow2
+ image: rhcos44
  cluster: testk
  domain: karmalabs.com
  masters: 1
