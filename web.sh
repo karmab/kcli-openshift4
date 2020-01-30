@@ -1,6 +1,5 @@
 mkdir /etc/web
 while [ "$( ls -1 /etc/web | wc -l)" != "2" ] ; do 
- curl -fs -kL https://{{ api_ip }}:22623/config/worker -o /etc/web/worker
  curl -fs -kL https://{{ api_ip }}:22623/config/master -o /etc/web/master
  sleep 5
 done

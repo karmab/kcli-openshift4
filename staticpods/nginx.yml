@@ -27,20 +27,6 @@ spec:
     volumeMounts:
     - name: data-dir
       mountPath: "/usr/share/nginx/html"
-  - name: nginx-get-worker-mco
-    securityContext:
-      privileged: true
-    image: docker.io/yauritux/busybox-curl
-    command:
-    - "curl"
-    args:
-    - "-kL"
-    - "https://{{ api_ip}}:22623/config/worker"
-    - "-o"
-    - "/usr/share/nginx/html/worker"
-    volumeMounts:
-    - name: data-dir
-      mountPath: "/usr/share/nginx/html"
   containers:
   - name: nginx
     image: docker.io/library/nginx:alpine

@@ -2,7 +2,6 @@ parameters:
  numcpus: 4
  network: default
  master_memory: 8192
- worker_memory: 8192
  deploy_bootstrap: true
  bootstrap_memory: 4096
  disk_size: 30
@@ -11,7 +10,6 @@ parameters:
  domain: karmalabs.com
  masters: 1
  workers: 0
- scale: false
  autostart: false
  keys: []
  api_ip: 
@@ -20,22 +18,12 @@ parameters:
  extra_networks: []
  master_macs: []
  master_ips: []
- worker_macs: []
- worker_ips: []
  bootstrap_mac: 
  bootstrap_ip: 
  numa:
  numamode:
  cpupinning:
  pcidevices:
- baremetal: false
- baremetal_interface: eth1
- baremetal_net: default
- baremetal_ip: 172.22.0.3
- baremetal_cidr: 24
- baremetal_range: 172.22.0.10,172.22.0.100
-
-{%- if not scale %}
 
 {{ cluster }}-bootstrap:
  image: {{ image }}
@@ -105,7 +93,7 @@ parameters:
     origin: config.hcl.templ
   - path: /etc/kubernetes/apps.db
     origin: apps.db
-{%-if workers > 0 %}
+{%- if workers > 0 %}
   - path: /etc/kubernetes/manifests/haproxy.yml
     origin: staticpods/haproxy.yml
   - path: /etc/kubernetes/haproxy.cfg
@@ -117,49 +105,4 @@ parameters:
     origin: staticpods/keepalived.yml
   - path: /etc/kubernetes/keepalived.conf
     origin: keepalived.conf
-{% endfor %}
-{%- endif %}
-
-{% for num in range(0, workers) %}
-{% if worker_macs and worker_macs|length >= workers %}
- {% set net0 = {"name": network, "mac": worker_macs[num]} %}
-{% else %}
- {% set net0 = network %}
-{% endif %}
-{{ cluster }}-worker-{{ num }}:
- domain: {{ cluster }}.{{ domain }} 
- image: {{ image }}
- keys: {{ keys }}
- enableroot: false 
- numcpus: {{ numcpus }}
- memory: {{ worker_memory }}
- autostart: {{ autostart }}
- nets: {{ [net0] + extra_networks }}
- disks: {{ [disk_size] + extra_disks }}
- files:
-  - path: /etc/NetworkManager/dispatcher.d/99-forcedns
-    origin: 99-forcedns
-    mode: 755
-  - path: /etc/kubernetes/manifests/coredns.yml
-    origin: staticpods/coredns.yml
-  - path: /etc/kubernetes/Corefile
-    origin: Corefile
-  - path: /etc/kubernetes/manifests/mdns.yml
-    origin: staticpods/mdns.yml
-  - path: /etc/kubernetes/config.hcl.templ
-    origin: config.hcl.templ
-  - path: /etc/kubernetes/apps.db
-    origin: apps.db
-{% if numa != None %}
- numa: {{ numa }}
-{% endif %}
-{% if numamode != None %}
- numamode: {{ numamode }}
-{% endif %}
-{% if cpupinning != None %}
- cpupinning: {{ cpupinning }}
-{% endif %}
-{% if pcidevices != None and num == 0 %}
- pcidevices: {{ pcidevices }}
-{% endif %}
 {% endfor %}

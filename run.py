@@ -244,9 +244,9 @@ def scale(args):
     paramdata['scale'] = True
     paramdata['workers'] = workers
     if platform in virtplatforms:
-        config.plan(cluster, inputfile='ocp.yml', overrides=paramdata)
+        config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
     elif platform in cloudplatforms:
-        config.plan(cluster, inputfile='ocp_cloud.yml', overrides=paramdata)
+        config.plan(cluster, inputfile='cloud.yml', overrides=paramdata)
 
 
 def delete(args):
@@ -291,7 +291,6 @@ def create(args):
             'pull_secret': 'openshift_pull.json',
             'version': 'nightly',
             'macosx': False,
-            'baremetal': False,
             'network_type': 'OpenShiftSDN'}
     data.update(paramdata)
     version = data.get('version')
@@ -316,7 +315,6 @@ def create(args):
     pub_key = data.get('pub_key')
     pull_secret = pwd_path(data.get('pull_secret')) if version != 'upstream' else pwd_path('fake_pull.json')
     macosx = data.get('macosx')
-    baremetal = data.get('baremetal')
     if macosx and not os.path.exists('/i_am_a_container'):
         macosx = False
     if platform == 'openstack' and (api_ip is None or public_api_ip is None):
@@ -411,11 +409,6 @@ def create(args):
                 f.write(installconfig)
         else:
             copy2(f, "%s/openshift" % clusterdir)
-    if baremetal:
-        metal3config = config.process_inputfile(cluster, "metal3-config.yaml", overrides=data)
-        pprint("Rendering metal3 config map", color='blue')
-        with open("%s/openshift/metal3-config.yaml" % clusterdir, 'w') as f:
-            f.write(metal3config)
     call('openshift-install --dir=%s create ignition-configs' % clusterdir, shell=True)
     staticdata = gather_dhcp(data, platform)
     if staticdata:
@@ -535,7 +528,7 @@ def create(args):
             sedcmd += ' > %s/bootstrap.ign' % clusterdir
             call(sedcmd, shell=True)
         sedcmd = 'sed -i "s@https://api-int.%s.%s:22623/config@http://%s:8080@"' % (cluster, domain, api_ip)
-        sedcmd += ' %s/master.ign %s/worker.ign' % (clusterdir, clusterdir)
+        sedcmd += ' %s/master.ign' % clusterdir
         call(sedcmd, shell=True)
     if platform in cloudplatforms:
         bootstrap_helper_name = "%s-bootstrap-helper" % cluster
@@ -561,7 +554,10 @@ def create(args):
         sedcmd += ' > %s/bootstrap.ign' % clusterdir
         call(sedcmd, shell=True)
     if platform in virtplatforms:
-        config.plan(cluster, inputfile='ocp.yml', overrides=paramdata)
+        master_overrides = paramdata
+        paramdata['workers'] = 0
+        pprint("Deploying masters", color='blue')
+        config.plan(cluster, inputfile='masters.yml', overrides=master_overrides)
         call('openshift-install --dir=%s wait-for bootstrap-complete || exit 1' % clusterdir, shell=True)
         todelete = ["%s-bootstrap" % cluster]
         if platform in ['kubevirt', 'openstack', 'vsphere']:
@@ -570,7 +566,7 @@ def create(args):
             pprint("Deleting %s" % vm)
             k.delete(vm)
     else:
-        config.plan(cluster, inputfile='ocp_cloud.yml', overrides=paramdata)
+        config.plan(cluster, inputfile='cloud.yml', overrides=paramdata)
         call('openshift-install --dir=%s wait-for bootstrap-complete || exit 1' % clusterdir, shell=True)
         todelete = ["%s-bootstrap" % cluster, "%s-bootstrap-helper" % cluster]
         for vm in todelete:
@@ -579,17 +575,19 @@ def create(args):
     if workers == 0:
         call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
              shell=True)
+    elif platform in virtplatforms:
+        copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
+        with open("%s/worker.ign" % clusterdir, 'w') as w:
+            workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
+            w.write(str(workerdata))
+        pprint("Deploying workers", color='blue')
+        config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
     pprint("Deploying certs autoapprover cronjob", color='blue')
     call("oc create -f autoapprovercron.yml", shell=True)
     installcommand = 'openshift-install --dir=%s wait-for install-complete' % clusterdir
     installcommand = "%s | %s" % (installcommand, installcommand)
     pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
     call(installcommand, shell=True)
-    if platform in virtplatforms:
-        copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
-        with open("%s/worker.ign" % clusterdir, 'w') as w:
-            workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
-            w.write(str(workerdata))
     extrasdir = pwd_path("extras")
     if os.path.exists(extrasdir):
         pprint("Deploying extras", color='blue')
