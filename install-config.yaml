@@ -2,7 +2,7 @@ apiVersion: v1
 baseDomain: {{ domain }}
 compute:
 - name: worker
-  replicas: {{ workers }}
+  replicas: {{ final_workers }}
 controlPlane:
   name: master
   replicas: {{ masters }}

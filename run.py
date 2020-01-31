@@ -312,6 +312,7 @@ def create(args):
     network = data.get('network')
     masters = data.get('masters')
     workers = data.get('workers')
+    paramdata['final_workers'] = workers
     tag = data.get('tag')
     pub_key = data.get('pub_key')
     pull_secret = pwd_path(data.get('pull_secret')) if version != 'upstream' else pwd_path('fake_pull.json')
