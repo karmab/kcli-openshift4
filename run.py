@@ -522,7 +522,6 @@ def create(args):
         sedcmd += ' > %s/bootstrap.ign' % clusterdir
         call(sedcmd, shell=True)
     if platform in virtplatforms:
-        paramdata['workers'] = 0
         pprint("Deploying masters", color='blue')
         config.plan(cluster, inputfile='masters.yml', overrides=paramdata)
         call('openshift-install --dir=%s wait-for bootstrap-complete || exit 1' % clusterdir, shell=True)
@@ -551,7 +550,6 @@ def create(args):
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
             w.write(workerdata)
         pprint("Deploying workers", color='blue')
-        paramdata['workers'] = workers
         config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
     installcommand = 'openshift-install --dir=%s wait-for install-complete' % clusterdir
     installcommand = "%s | %s" % (installcommand, installcommand)
