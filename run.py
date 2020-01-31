@@ -55,7 +55,7 @@ def real_path(x):
 
 def insecure_fetch(url):
     context = ssl._create_unverified_context()
-    data = urlopen(url, timeout=300, context=context)
+    data = urlopen(url, timeout=20, context=context)
     return data.read()
 
 
@@ -577,7 +577,8 @@ def create(args):
              shell=True)
     elif platform in virtplatforms:
         pprint("Deploying workers", color='blue')
-        pprint("Retrieving workers ignition data", color='blue')
+        pprint("Waiting 15s for api vip to failover before retrieving workers ignition data", color='blue')
+        sleep(15)
         # copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
