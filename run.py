@@ -55,8 +55,9 @@ def real_path(x):
 
 def insecure_fetch(url):
     context = ssl._create_unverified_context()
-    data = urlopen(url, timeout=5, context=context)
-    return data.read()
+    response = urlopen(url, timeout=5, context=context)
+    data = response.read()
+    return data.decode('utf-8')
 
 
 def get_values(data, element, field):
@@ -548,7 +549,7 @@ def create(args):
         os.remove(ignitionworkerfile)
         with open(ignitionworkerfile, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
-            w.write(str(workerdata))
+            w.write(workerdata)
         pprint("Deploying workers", color='blue')
         paramdata['workers'] = workers
         config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
