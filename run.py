@@ -542,7 +542,7 @@ def create(args):
     call("oc create -f autoapprovercron.yml ; oc apply -f autoapprovercron.yml", shell=True)
     call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-", shell=True)
     if platform in virtplatforms:
-        pprint("Waiting 30s before retrying getting workers ignition data", color='blue')
+        pprint("Waiting 30s before retrieving workers ignition data", color='blue')
         sleep(30)
         ignitionworkerfile = "%s/worker.ign" % clusterdir
         os.remove(ignitionworkerfile)
@@ -555,13 +555,13 @@ def create(args):
     installcommand = "%s | %s" % (installcommand, installcommand)
     pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
     call(installcommand, shell=True)
-    extrasdir = pwd_path("extras")
-    if os.path.exists(extrasdir):
-        pprint("Deploying extras", color='blue')
-        os.chdir(extrasdir)
-        for entry in sorted(os.listdir('.')):
-            if os.path.isfile(entry) and entry.endswith('sh'):
-                call("bash %s" % entry, shell=True)
+    # extrasdir = pwd_path("extras")
+    # if os.path.exists(extrasdir):
+    #     pprint("Deploying extras", color='blue')
+    #     os.chdir(extrasdir)
+    #     for entry in sorted(os.listdir('.')):
+    #         if os.path.isfile(entry) and entry.endswith('sh'):
+    #             call("bash %s" % entry, shell=True)
 
 
 if __name__ == '__main__':
