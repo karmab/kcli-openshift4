@@ -55,7 +55,7 @@ def real_path(x):
 
 def insecure_fetch(url):
     context = ssl._create_unverified_context()
-    data = urlopen(url, context=context)
+    data = urlopen(url, timeout=300, context=context)
     return data.read()
 
 
@@ -576,11 +576,12 @@ def create(args):
         call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
              shell=True)
     elif platform in virtplatforms:
+        pprint("Deploying workers", color='blue')
+        pprint("Retrieving workers ignition data", color='blue')
         # copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
         with open("%s/worker.ign" % clusterdir, 'w') as w:
             workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
             w.write(str(workerdata))
-        pprint("Deploying workers", color='blue')
         config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
     pprint("Deploying certs autoapprover cronjob", color='blue')
     call("oc create -f autoapprovercron.yml", shell=True)
