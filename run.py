@@ -539,10 +539,10 @@ def create(args):
         for vm in todelete:
             pprint("Deleting %s" % vm)
             k.delete(vm)
-    if workers == 0:
-        call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
-             shell=True)
-    elif platform in virtplatforms:
+    pprint("Deploying certs autoapprover cronjob", color='blue')
+    call("oc create -f autoapprovercron.yml", shell=True)
+    call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-", shell=True)
+    if platform in virtplatforms:
         pprint("Waiting 30s before retrying getting workers ignition data", color='blue')
         sleep(30)
         ignitionworkerfile = "%s/worker.ign" % clusterdir
@@ -553,8 +553,6 @@ def create(args):
         pprint("Deploying workers", color='blue')
         paramdata['workers'] = workers
         config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
-    pprint("Deploying certs autoapprover cronjob", color='blue')
-    call("oc create -f autoapprovercron.yml", shell=True)
     installcommand = 'openshift-install --dir=%s wait-for install-complete' % clusterdir
     installcommand = "%s | %s" % (installcommand, installcommand)
     pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
