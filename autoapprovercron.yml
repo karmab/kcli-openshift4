@@ -46,4 +46,4 @@ spec:
             name: autoapprover
           restartPolicy: OnFailure
           serviceAccountName: autoapprover
-  schedule: '*/3 * * * *'
+  schedule: '*/2 * * * *'

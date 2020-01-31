@@ -312,7 +312,6 @@ def create(args):
     network = data.get('network')
     masters = data.get('masters')
     workers = data.get('workers')
-    paramdata['final_workers'] = workers
     tag = data.get('tag')
     pub_key = data.get('pub_key')
     pull_secret = pwd_path(data.get('pull_secret')) if version != 'upstream' else pwd_path('fake_pull.json')
@@ -541,7 +540,7 @@ def create(args):
             pprint("Deleting %s" % vm)
             k.delete(vm)
     pprint("Deploying certs autoapprover cronjob", color='blue')
-    call("oc create -f autoapprovercron.yml", shell=True)
+    call("oc create -f autoapprovercron.yml ; oc apply -f autoapprovercron.yml", shell=True)
     call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-", shell=True)
     if platform in virtplatforms:
         pprint("Waiting 30s before retrying getting workers ignition data", color='blue')
