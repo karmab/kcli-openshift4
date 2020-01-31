@@ -438,39 +438,6 @@ def create(args):
                                                                        'prometheus-k8s-openshift-monitoring.apps']]
                 entries = ' '.join(entries)
                 call("sudo sh -c 'echo %s %s >> /etc/hosts'" % (host_ip, entries), shell=True)
-            if os.path.exists('/Users'):
-                if not os.path.exists('/etc/resolver'):
-                    os.mkdir('/etc/resolver')
-                if not os.path.exists('/etc/resolver/%s.%s' % (cluster, domain)):
-                    pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
-                    call("sudo sh -c 'echo nameserver %s > /etc/resolver/%s.%s'" % (ingress_ip, cluster, domain),
-                         shell=True)
-                else:
-                    resolverlines = open("/etc/resolver/%s.%s" % (cluster, domain)).readlines()
-                    correct = [e for e in resolverlines if api_ip not in e]
-                    if not correct:
-                        pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
-                        call("sudo sh -c 'echo nameserver %s > /etc/resolver/%s.%s'" % (ingress_ip, cluster, domain),
-                             shell=True)
-            elif not os.path.exists("/etc/NetworkManager/dnsmasq.d/%s.%s.conf" % (cluster, domain)):
-                pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
-                nm = "sudo sh -c '"
-                nm += "echo server=/apps.%s.%s/%s > /etc/NetworkManager/dnsmasq.d/%s.%s.conf'" % (cluster, domain,
-                                                                                                  ingress_ip, cluster,
-                                                                                                  domain)
-                nm += ";sudo systemctl reload NetworkManager"
-                call(nm, shell=True)
-            else:
-                nmfile = open("/etc/NetworkManager/dnsmasq.d/%s.%s.conf" % (cluster, domain)).readlines()
-                correct = [e for e in nmfile if host_ip in e]
-                if not correct:
-                    pprint("Adding wildcard for apps.%s.%s in /etc/resolver" % (cluster, domain), color='blue')
-                    nm = "sudo sh -c '"
-                    nm += "echo server=/apps.%s.%s/%s > /etc/NetworkManager/dnsmasq.d/%s.%s.conf'" % (cluster, domain,
-                                                                                                      ingress_ip,
-                                                                                                      cluster, domain)
-                    nm += ";sudo systemctl reload NetworkManager"
-                    call(nm, shell=True)
         else:
             entries = ["%s.%s.%s" % (x, cluster, domain) for x in ['api', 'console-openshift-console.apps',
                                                                    'oauth-openshift.apps',
@@ -575,18 +542,14 @@ def create(args):
         call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-",
              shell=True)
     elif platform in virtplatforms:
-        pprint("Deploying workers", color='blue')
+        pprint("Waiting 30s before retrying getting workers ignition data", color='blue')
+        sleep(30)
         ignitionworkerfile = "%s/worker.ign" % clusterdir
         os.remove(ignitionworkerfile)
-        while not os.path.exists(ignitionworkerfile):
-            with open(ignitionworkerfile, 'w') as w:
-                try:
-                    workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
-                    w.write(str(workerdata))
-                except:
-                    pprint("Waiting 10s before retrying getting workers ignition data", color='blue')
-                    sleep(10)
-                    continue
+        with open(ignitionworkerfile, 'w') as w:
+            workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
+            w.write(str(workerdata))
+        pprint("Deploying workers", color='blue')
         paramdata['workers'] = workers
         config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
     pprint("Deploying certs autoapprover cronjob", color='blue')
