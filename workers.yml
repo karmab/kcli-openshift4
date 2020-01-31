@@ -6,7 +6,6 @@ parameters:
  image: rhcos44
  cluster: testk
  domain: karmalabs.com
- masters: 1
  workers: 0
  scale: false
  autostart: false

@@ -55,7 +55,7 @@ def real_path(x):
 
 def insecure_fetch(url):
     context = ssl._create_unverified_context()
-    data = urlopen(url, timeout=20, context=context)
+    data = urlopen(url, timeout=5, context=context)
     return data.read()
 
 
@@ -554,10 +554,9 @@ def create(args):
         sedcmd += ' > %s/bootstrap.ign' % clusterdir
         call(sedcmd, shell=True)
     if platform in virtplatforms:
-        master_overrides = paramdata
         paramdata['workers'] = 0
         pprint("Deploying masters", color='blue')
-        config.plan(cluster, inputfile='masters.yml', overrides=master_overrides)
+        config.plan(cluster, inputfile='masters.yml', overrides=paramdata)
         call('openshift-install --dir=%s wait-for bootstrap-complete || exit 1' % clusterdir, shell=True)
         todelete = ["%s-bootstrap" % cluster]
         if platform in ['kubevirt', 'openstack', 'vsphere']:
@@ -577,12 +576,18 @@ def create(args):
              shell=True)
     elif platform in virtplatforms:
         pprint("Deploying workers", color='blue')
-        pprint("Waiting 15s for api vip to failover before retrieving workers ignition data", color='blue')
-        sleep(15)
-        # copy2("%s/worker.ign" % clusterdir, "%s/worker.ign.ori" % clusterdir)
-        with open("%s/worker.ign" % clusterdir, 'w') as w:
-            workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
-            w.write(str(workerdata))
+        ignitionworkerfile = "%s/worker.ign" % clusterdir
+        os.remove(ignitionworkerfile)
+        while not os.path.exists(ignitionworkerfile):
+            with open(ignitionworkerfile, 'w') as w:
+                try:
+                    workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
+                    w.write(str(workerdata))
+                except:
+                    pprint("Waiting 10s before retrying getting workers ignition data", color='blue')
+                    sleep(10)
+                    continue
+        paramdata['workers'] = workers
         config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
     pprint("Deploying certs autoapprover cronjob", color='blue')
     call("oc create -f autoapprovercron.yml", shell=True)
