@@ -538,21 +538,21 @@ def create(args):
         for vm in todelete:
             pprint("Deleting %s" % vm)
             k.delete(vm)
-    pprint("Deploying certs autoapprover cronjob", color='blue')
-    call("oc create -f autoapprovercron.yml ; oc apply -f autoapprovercron.yml", shell=True)
-    call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-", shell=True)
     if platform in virtplatforms:
         pprint("Waiting 30s before retrieving workers ignition data", color='blue')
         sleep(30)
         ignitionworkerfile = "%s/worker.ign" % clusterdir
         os.remove(ignitionworkerfile)
-        while not os.path.exist(ignitionworkerfile) or os.stat(ignitionworkerfile).st_size == 0:
+        while not os.path.exists(ignitionworkerfile) or os.stat(ignitionworkerfile).st_size == 0:
             with open(ignitionworkerfile, 'w') as w:
                 workerdata = insecure_fetch("https://api.%s.%s:22623/config/worker" % (cluster, domain))
                 w.write(workerdata)
             sleep(5)
         pprint("Deploying workers", color='blue')
         config.plan(cluster, inputfile='workers.yml', overrides=paramdata)
+    call("oc adm taint nodes -l node-role.kubernetes.io/master node-role.kubernetes.io/master:NoSchedule-", shell=True)
+    pprint("Deploying certs autoapprover cronjob", color='blue')
+    call("oc create -f autoapprovercron.yml ; oc apply -f autoapprovercron.yml", shell=True)
     installcommand = 'openshift-install --dir=%s wait-for install-complete' % clusterdir
     installcommand = "%s | %s" % (installcommand, installcommand)
     pprint("Launching install-complete step. Note it will be retried one extra time in case of timeouts", color='blue')
