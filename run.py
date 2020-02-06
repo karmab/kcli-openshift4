@@ -211,7 +211,7 @@ def download(args):
 def template(args):
     paramfile = args.paramfile if not os.path.exists('/i_am_a_container') else '/workdir/%s' % args.paramfile
     pprint("Generating parameter file %s" % real_path(paramfile), color='green')
-    params = get_parameters('ocp.yml')
+    params = get_parameters('masters.yml')
     parameters = '\n'.join([parameter.lstrip() for parameter in params.split('\n')[1:]])
     path = paramfile
     with open(path, 'w') as f:
