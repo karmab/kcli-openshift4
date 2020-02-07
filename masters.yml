@@ -4,6 +4,7 @@ parameters:
  master_memory: 8192
  deploy_bootstrap: true
  bootstrap_memory: 4096
+ bootstrap_numcpus: 2
  disk_size: 30
  image: rhcos44
  cluster: testk
@@ -28,7 +29,7 @@ parameters:
 {{ cluster }}-bootstrap:
  image: {{ image }}
  keys: {{ keys }}
- numcpus: 2
+ numcpus: {{ bootstrap_numcpus }}
  enableroot: false 
  memory: {{ bootstrap_memory }}
  dns: 127.0.0.1
