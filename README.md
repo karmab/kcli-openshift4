@@ -1,3 +1,7 @@
+
+# *THIS REPO is now considered obsolete, as all the described functionality was directly merged in kcli. Refer to https://kcli.readthedocs.io/en/master/#deploying-kubernetes-openshift-clusters*
+
+
 *DISCLAIMER*: This is not supported in anyway by Red Hat.
 
 This repo provides a way for deploying openshift4 ( or okd ) on any platform and on an arbitrary number of masters and workers.
