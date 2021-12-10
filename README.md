@@ -1,5 +1,5 @@
 
-# *THIS REPO is now considered obsolete, as all the described functionality was directly merged in kcli. Refer to https://kcli.readthedocs.io/en/master/#deploying-kubernetes-openshift-clusters*
+# *THIS REPO is now considered obsolete, as all the described functionality was directly merged in kcli. Refer to *https://kcli.readthedocs.io/en/latest/#deploying-openshift-okd-clusters*
 
 
 *DISCLAIMER*: This is not supported in anyway by Red Hat.
